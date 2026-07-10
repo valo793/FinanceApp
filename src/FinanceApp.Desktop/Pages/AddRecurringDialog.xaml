@@ -1,0 +1,67 @@
+<ContentDialog
+    x:Class="FinanceApp.Desktop.Pages.AddRecurringDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Nova Recorrência"
+    PrimaryButtonText="Salvar"
+    CloseButtonText="Cancelar"
+    DefaultButton="Primary"
+    RequestedTheme="Dark"
+    Style="{ThemeResource DefaultContentDialogStyle}">
+
+    <StackPanel Spacing="12" Width="320" Margin="0,10,0,0">
+        <TextBox x:Name="DescriptionInput" 
+                 Header="Descrição" 
+                 PlaceholderText="Ex: Assinatura Netflix, Aluguel" />
+                 
+        <NumberBox x:Name="AmountInput" 
+                   Header="Valor Padrão (R$)" 
+                   Value="0" 
+                   SpinButtonPlacementMode="Compact" />
+                   
+        <ComboBox x:Name="KindInput" 
+                  Header="Tipo de Lançamento" 
+                  HorizontalAlignment="Stretch" 
+                  SelectedIndex="0">
+            <ComboBoxItem Content="Despesa (Expense)" Tag="expense" />
+            <ComboBoxItem Content="Receita (Income)" Tag="income" />
+        </ComboBox>
+        
+        <ComboBox x:Name="AccountInput" 
+                  Header="Conta Associada" 
+                  HorizontalAlignment="Stretch"
+                  DisplayMemberPath="Name"
+                  SelectedValuePath="Id" />
+                  
+        <ComboBox x:Name="CategoryInput" 
+                  Header="Categoria" 
+                  HorizontalAlignment="Stretch"
+                  DisplayMemberPath="Name"
+                  SelectedValuePath="Id" />
+                  
+        <ComboBox x:Name="FrequencyInput" 
+                  Header="Frequência" 
+                  HorizontalAlignment="Stretch" 
+                  SelectedIndex="2">
+            <ComboBoxItem Content="Diário" Tag="daily" />
+            <ComboBoxItem Content="Semanal" Tag="weekly" />
+            <ComboBoxItem Content="Mensal" Tag="monthly" />
+            <ComboBoxItem Content="Anual" Tag="yearly" />
+        </ComboBox>
+        
+        <NumberBox x:Name="IntervalInput" 
+                   Header="Intervalo" 
+                   Value="1" 
+                   SpinButtonPlacementMode="Compact" 
+                   Minimum="1" />
+                   
+        <DatePicker x:Name="DateInput" 
+                    Header="Data de Início" 
+                    HorizontalAlignment="Stretch" />
+                    
+        <CheckBox x:Name="AutoConfirmInput" 
+                  Content="Auto-Confirmar (Efetivar automaticamente)" 
+                  IsChecked="True" 
+                  Margin="0,8,0,0" />
+    </StackPanel>
+</ContentDialog>

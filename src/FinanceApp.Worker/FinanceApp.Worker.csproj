@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+  <PropertyGroup>
+    <AssemblyName>FinanceApp.Worker</AssemblyName>
+    <RootNamespace>FinanceApp.Worker</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FinanceApp.Infrastructure\FinanceApp.Infrastructure.csproj" />
+    <ProjectReference Include="..\FinanceApp.Application\FinanceApp.Application.csproj" />
+    <ProjectReference Include="..\FinanceApp.Domain\FinanceApp.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+  </ItemGroup>
+</Project>

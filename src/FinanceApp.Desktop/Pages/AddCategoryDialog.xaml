@@ -1,0 +1,33 @@
+<ContentDialog
+    x:Class="FinanceApp.Desktop.Pages.AddCategoryDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Nova Categoria"
+    PrimaryButtonText="Criar"
+    CloseButtonText="Cancelar"
+    DefaultButton="Primary"
+    RequestedTheme="Dark"
+    Style="{ThemeResource DefaultContentDialogStyle}">
+
+    <StackPanel Spacing="16" Width="300" Margin="0,10,0,0">
+        <TextBox x:Name="NameInput" 
+                 Header="Nome da Categoria" 
+                 PlaceholderText="Ex: Alimentação, Transporte" />
+                 
+        <TextBlock Text="Cor da Categoria" 
+                   Style="{StaticResource BodyTextBlockStyle}" 
+                   Foreground="{StaticResource TextSecondaryBrush}" />
+        <ColorPicker x:Name="ColorPickerInput" 
+                     IsAlphaEnabled="False"
+                     IsAlphaSliderVisible="False"
+                     IsAlphaTextInputVisible="False"
+                     IsHexInputVisible="True"
+                     IsColorSliderVisible="True"
+                     IsColorChannelTextInputVisible="False"
+                     Height="200" />
+                 
+        <TextBox x:Name="IconInput" 
+                 Header="Ícone (Nome do Símbolo)" 
+                 PlaceholderText="Ex: Shop, Folder" />
+    </StackPanel>
+</ContentDialog>

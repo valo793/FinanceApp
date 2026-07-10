@@ -1,0 +1,62 @@
+<Page
+    x:Class="FinanceApp.Desktop.Pages.LoginPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Background="{StaticResource BgPrimaryBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Width="460"
+                Padding="32"
+                CornerRadius="18"
+                Background="{StaticResource BgSurfaceBrush}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+            <StackPanel Spacing="18">
+                <TextBlock Text="FinanceApp"
+                           FontSize="30"
+                           Foreground="{StaticResource TextPrimaryBrush}"
+                           FontWeight="SemiBold" />
+                <TextBlock Text="Controle financeiro premium para desktop Windows"
+                           FontSize="14"
+                           Foreground="{StaticResource TextSecondaryBrush}" />
+
+                <TextBox Header="E-mail" PlaceholderText="voce@email.com" 
+                         Text="{x:Bind ViewModel.Email, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <PasswordBox Header="Senha" 
+                             PasswordChanged="PasswordBox_PasswordChanged" />
+                <CheckBox Content="Confiar neste dispositivo" Foreground="{StaticResource TextPrimaryBrush}" />
+
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Content="Entrar"
+                            Height="44"
+                            HorizontalAlignment="Stretch"
+                            Background="{StaticResource AccentCyanBrush}"
+                            Foreground="Black"
+                            Command="{x:Bind ViewModel.LoginCommand}" />
+                    <Button Grid.Column="1" Content="Registrar"
+                            Height="44"
+                            HorizontalAlignment="Stretch"
+                            Background="Transparent"
+                            BorderBrush="#24314E"
+                            BorderThickness="1"
+                            Foreground="{StaticResource TextPrimaryBrush}"
+                            Command="{x:Bind ViewModel.RegisterCommand}" />
+                </Grid>
+
+                <ProgressBar IsIndeterminate="True"
+                             Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay}" />
+
+                <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+                           Foreground="{StaticResource AccentVioletBrush}"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Page>
+

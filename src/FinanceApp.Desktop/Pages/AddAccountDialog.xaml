@@ -1,0 +1,42 @@
+<ContentDialog
+    x:Class="FinanceApp.Desktop.Pages.AddAccountDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Nova Conta"
+    PrimaryButtonText="Criar"
+    CloseButtonText="Cancelar"
+    DefaultButton="Primary"
+    RequestedTheme="Dark"
+    Style="{ThemeResource DefaultContentDialogStyle}">
+
+    <StackPanel Spacing="16" Width="320" Margin="0,10,0,0">
+        <TextBox x:Name="NameInput" 
+                 Header="Nome da Conta" 
+                 PlaceholderText="Ex: Banco do Brasil" />
+                 
+        <ComboBox x:Name="TypeInput" 
+                  Header="Tipo" 
+                  HorizontalAlignment="Stretch" 
+                  SelectedIndex="0">
+            <ComboBoxItem Content="Conta Corrente" Tag="checking" />
+            <ComboBoxItem Content="Poupança" Tag="savings" />
+            <ComboBoxItem Content="Cartão de Crédito" Tag="credit_card" />
+            <ComboBoxItem Content="Investimento" Tag="investment" />
+            <ComboBoxItem Content="Carteira (Dinheiro)" Tag="wallet" />
+        </ComboBox>
+        
+        <NumberBox x:Name="BalanceInput" 
+                   Header="Saldo Inicial (R$)" 
+                   Value="0" 
+                   SpinButtonPlacementMode="Compact" />
+                   
+        <TextBox x:Name="CurrencyInput" 
+                 Header="Moeda" 
+                 Text="BRL" />
+                 
+        <CheckBox x:Name="NetWorthInput" 
+                  Content="Incluir no Patrimônio Líquido" 
+                  IsChecked="True" 
+                  Margin="0,8,0,0" />
+    </StackPanel>
+</ContentDialog>

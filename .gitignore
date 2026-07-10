@@ -1,0 +1,14 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.db
+*.pdb
+TestResults/
+packages/
+artifacts/
+.publish/
+node_modules/
+.env
+secrets.json
