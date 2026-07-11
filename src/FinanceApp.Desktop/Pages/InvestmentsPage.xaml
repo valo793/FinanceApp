@@ -1,16 +1,190 @@
 <Page
     x:Class="FinanceApp.Desktop.Pages.InvestmentsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Grid Padding="24" Background="{StaticResource BgPrimaryBrush}">
-        <StackPanel Spacing="20" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <SymbolIcon Symbol="Globe" Margin="0,0,0,10" Foreground="{StaticResource AccentCyanBrush}">
-                <SymbolIcon.RenderTransform>
-                    <ScaleTransform ScaleX="3" ScaleY="3" CenterX="10" CenterY="10" />
-                </SymbolIcon.RenderTransform>
-            </SymbolIcon>
-            <TextBlock Text="Módulo de Investimentos" FontSize="24" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center" />
-            <TextBlock Text="O acompanhamento de ativos e carteiras estará disponível na Sprint 3." FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" />
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:inv="using:FinanceApp.Contracts.Investments"
+    xmlns:controls="using:FinanceApp.Desktop.Controls"
+    mc:Ignorable="d">
+
+    <ScrollViewer Background="{StaticResource BgPrimaryBrush}">
+        <StackPanel Spacing="24" Padding="24">
+            
+            <!-- Header Section -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Investimentos"
+                               FontSize="28"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}" />
+                    <TextBlock Text="Acompanhe sua alocação de ativos e rentabilidade em tempo real"
+                               FontSize="14"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Margin="0,4,0,0" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                    <Button Command="{x:Bind ViewModel.SyncPricesCommand}"
+                            Background="Transparent"
+                            BorderBrush="#24314E"
+                            BorderThickness="1"
+                            Foreground="{StaticResource TextPrimaryBrush}"
+                            Padding="16,8"
+                            CornerRadius="8"
+                            FontWeight="SemiBold">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <SymbolIcon Symbol="Sync" />
+                            <TextBlock Text="Sincronizar" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Click="AddInvestment_Click"
+                            Background="{StaticResource AccentCyanBrush}"
+                            Foreground="{StaticResource BgPrimaryBrush}"
+                            Padding="16,8"
+                            CornerRadius="8"
+                            FontWeight="SemiBold">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <SymbolIcon Symbol="Add" />
+                            <TextBlock Text="Novo Ativo" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- Loading Indicator -->
+            <ProgressBar IsIndeterminate="True"
+                         Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay}"
+                         Background="Transparent"
+                         Foreground="{StaticResource AccentCyanBrush}" />
+
+            <!-- KPI Cards Section -->
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Total Invested -->
+                <Border Grid.Column="0" Padding="20" CornerRadius="16" Background="{StaticResource BgSurfaceBrush}">
+                    <StackPanel>
+                        <TextBlock Text="Total Investido" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" />
+                        <TextBlock Text="{x:Bind ViewModel.TotalInvestedText, Mode=OneWay}" FontSize="26" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Current Value -->
+                <Border Grid.Column="1" Padding="20" CornerRadius="16" Background="{StaticResource BgSurfaceBrush}">
+                    <StackPanel>
+                        <TextBlock Text="Valor Atual" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" />
+                        <TextBlock Text="{x:Bind ViewModel.CurrentValueText, Mode=OneWay}" FontSize="26" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Gain / Loss -->
+                <Border Grid.Column="2" Padding="20" CornerRadius="16" Background="{StaticResource BgSurfaceBrush}">
+                    <StackPanel>
+                        <TextBlock Text="Rentabilidade Total" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" />
+                        <TextBlock Text="{x:Bind ViewModel.GainLossPercentText, Mode=OneWay}" FontSize="26" FontWeight="Bold" Foreground="{StaticResource AccentCyanBrush}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Evolution Chart Section -->
+            <Border Padding="20" CornerRadius="16" Background="{StaticResource BgSurfaceBrush}">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Evolução do Patrimônio Investido" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" />
+                    <controls:LineChart ItemsSource="{x:Bind ViewModel.HistoryPoints, Mode=OneWay}" Height="220" />
+                </StackPanel>
+            </Border>
+
+            <!-- Assets List -->
+            <Border Padding="20" CornerRadius="16" Background="{StaticResource BgSurfaceBrush}">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Meus Ativos" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" />
+
+                    <ListView ItemsSource="{x:Bind ViewModel.Investments, Mode=OneWay}"
+                              SelectionMode="None"
+                              IsItemClickEnabled="False">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="Padding" Value="12,8" />
+                                <Setter Property="Margin" Value="0,0,0,8" />
+                                <Setter Property="Background" Value="{StaticResource BgElevatedBrush}" />
+                                <Setter Property="CornerRadius" Value="8" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="inv:InvestmentDto">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Asset Name & Ticker -->
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind Name}" FontWeight="SemiBold" FontSize="15" Foreground="{StaticResource TextPrimaryBrush}" />
+                                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                                            <TextBlock Text="{x:Bind Ticker}" FontSize="12" Foreground="{StaticResource AccentCyanBrush}" Visibility="{x:Bind Ticker, Converter={StaticResource StringToVisibilityConverter}, FallbackValue=Collapsed}" d:Visibility="Visible" />
+                                            <TextBlock Text="{x:Bind AssetType}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Opacity="0.8" />
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!-- Position Info -->
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" Width="80">
+                                        <TextBlock Text="Quantidade" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Right" />
+                                        <TextBlock Text="{x:Bind Quantity}" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Right" Margin="0,2,0,0" />
+                                    </StackPanel>
+
+                                    <!-- Average Price / Current Price -->
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Width="140">
+                                        <TextBlock Text="Preço Médio / Atual" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Right" />
+                                        <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" Margin="0,2,0,0">
+                                            <TextBlock Text="{x:Bind AveragePrice}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" />
+                                            <TextBlock Text="/" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" />
+                                            <TextBlock Text="{x:Bind CurrentPrice}" FontSize="12" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" />
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!-- Total Invested & Current Value -->
+                                    <StackPanel Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Right" Width="100">
+                                        <TextBlock Text="Valor Atual" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Right" />
+                                        <TextBlock Text="{x:Bind CurrentValue}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Right" Margin="0,2,0,0" />
+                                    </StackPanel>
+
+                                    <!-- Actions (Edit/Delete) -->
+                                    <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="12,0,0,0">
+                                        <Button Click="EditInvestment_Click" Tag="{x:Bind}" Background="Transparent" BorderThickness="0" Padding="4">
+                                            <SymbolIcon Symbol="Edit" Foreground="{StaticResource TextSecondaryBrush}" />
+                                        </Button>
+                                        <Button Click="DeleteInvestment_Click" Tag="{x:Bind Id}" Background="Transparent" BorderThickness="0" Padding="4">
+                                            <SymbolIcon Symbol="Delete" Foreground="{StaticResource AccentVioletBrush}" />
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </StackPanel>
+            </Border>
+
+            <!-- Error message banner -->
+            <TextBlock Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                       Foreground="{StaticResource AccentVioletBrush}"
+                       TextWrapping="Wrap"
+                       HorizontalAlignment="Center" />
         </StackPanel>
-    </Grid>
+    </ScrollViewer>
 </Page>

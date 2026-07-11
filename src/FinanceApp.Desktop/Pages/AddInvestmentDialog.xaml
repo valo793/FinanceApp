@@ -1,0 +1,41 @@
+<ContentDialog
+    x:Class="FinanceApp.Desktop.Pages.AddInvestmentDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Novo Investimento"
+    PrimaryButtonText="Salvar"
+    CloseButtonText="Cancelar"
+    DefaultButton="Primary"
+    RequestedTheme="Dark">
+
+    <StackPanel Spacing="16" Width="360">
+        <TextBox x:Name="NameInput" Header="Nome do Ativo" PlaceholderText="Ex: Tesouro Selic, Ações Petrobras" />
+        
+        <TextBox x:Name="TickerInput" Header="Ticker (opcional)" PlaceholderText="Ex: PETR4, IVVB11" />
+
+        <ComboBox x:Name="AssetTypeInput" Header="Tipo de Ativo" HorizontalAlignment="Stretch" SelectedIndex="0">
+            <ComboBoxItem Tag="stock">Ação</ComboBoxItem>
+            <ComboBoxItem Tag="fixed_income">Renda Fixa</ComboBoxItem>
+            <ComboBoxItem Tag="fund">Fundo</ComboBoxItem>
+            <ComboBoxItem Tag="crypto">Cripto</ComboBoxItem>
+        </ComboBox>
+
+        <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <NumberBox x:Name="QuantityInput" Grid.Column="0" Header="Quantidade" Value="1" SmallChange="1" LargeChange="10" />
+            <NumberBox x:Name="AveragePriceInput" Grid.Column="1" Header="Preço Médio (R$)" Value="0.00" SmallChange="0.1" LargeChange="1.0" />
+        </Grid>
+
+        <NumberBox x:Name="CurrentPriceInput" Header="Preço Atual (R$)" Value="0.00" SmallChange="0.1" LargeChange="1.0" />
+
+        <ComboBox x:Name="RiskLevelInput" Header="Nível de Risco" HorizontalAlignment="Stretch" SelectedIndex="1">
+            <ComboBoxItem Tag="low">Baixo</ComboBoxItem>
+            <ComboBoxItem Tag="moderate">Moderado</ComboBoxItem>
+            <ComboBoxItem Tag="high">Alto</ComboBoxItem>
+        </ComboBox>
+    </StackPanel>
+</ContentDialog>

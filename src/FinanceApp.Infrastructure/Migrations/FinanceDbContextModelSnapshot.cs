@@ -151,6 +151,43 @@ namespace FinanceApp.Infrastructure.Migrations
                     b.ToTable("audit_logs", (string)null);
                 });
 
+            modelBuilder.Entity("FinanceApp.Domain.Entities.BalanceSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Balance")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("numeric(19,4)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("LockVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.Property<DateOnly>("SnapshotDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "AccountId", "SnapshotDate")
+                        .IsUnique();
+
+                    b.ToTable("balance_snapshots", (string)null);
+                });
+
             modelBuilder.Entity("FinanceApp.Domain.Entities.ExpenseCategory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -183,6 +220,10 @@ namespace FinanceApp.Infrastructure.Migrations
                     b.Property<long>("LockVersion")
                         .IsConcurrencyToken()
                         .HasColumnType("bigint");
+
+                    b.Property<decimal?>("MonthlyBudgetLimit")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("numeric(19,4)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -271,6 +312,15 @@ namespace FinanceApp.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AssetType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<decimal>("AveragePrice")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("numeric(19,4)");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -279,6 +329,10 @@ namespace FinanceApp.Infrastructure.Migrations
                         .HasMaxLength(3)
                         .HasColumnType("character(3)")
                         .IsFixedLength();
+
+                    b.Property<decimal>("CurrentPrice")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("numeric(19,4)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -294,6 +348,10 @@ namespace FinanceApp.Infrastructure.Migrations
 
                     b.Property<bool>("ProjectionEnabled")
                         .HasColumnType("boolean");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("numeric(19,4)");
 
                     b.Property<string>("RiskLevel")
                         .IsRequired()
@@ -316,6 +374,43 @@ namespace FinanceApp.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("investments", (string)null);
+                });
+
+            modelBuilder.Entity("FinanceApp.Domain.Entities.InvestmentSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("InvestmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("LockVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.Property<DateOnly>("SnapshotDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Value")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("numeric(19,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "InvestmentId", "SnapshotDate")
+                        .IsUnique();
+
+                    b.ToTable("investment_snapshots", (string)null);
                 });
 
             modelBuilder.Entity("FinanceApp.Domain.Entities.Notification", b =>
@@ -695,8 +790,15 @@ namespace FinanceApp.Infrastructure.Migrations
                     b.Property<DateTimeOffset?>("LockoutUntil")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("MfaBackupCodesHash")
+                        .HasColumnType("text");
+
                     b.Property<bool>("MfaEnabled")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("MfaSecret")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()

@@ -15,6 +15,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(x => x.PasswordHash).IsRequired();
         builder.Property(x => x.PasswordHashVersion).HasMaxLength(20).IsRequired();
         builder.Property(x => x.Status).HasMaxLength(20).IsRequired();
+        builder.Property(x => x.MfaSecret).HasMaxLength(100);
         builder.Property(x => x.LockVersion).IsConcurrencyToken();
     }
 }

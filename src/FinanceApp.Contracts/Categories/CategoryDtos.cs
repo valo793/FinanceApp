@@ -11,6 +11,7 @@ public sealed class CategoryDto
     public bool IsSystem { get; init; }
     public bool IsDefault { get; init; }
     public bool IsActive { get; init; }
+    public decimal? MonthlyBudgetLimit { get; init; }
     public long LockVersion { get; init; }
 }
 
@@ -19,6 +20,7 @@ public sealed class CreateCategoryRequest
     public required string Name { get; init; }
     public string? Color { get; init; }
     public string? Icon { get; init; }
+    public decimal? MonthlyBudgetLimit { get; init; }
 }
 
 public sealed class UpdateCategoryRequest
@@ -28,5 +30,6 @@ public sealed class UpdateCategoryRequest
     public string? Icon { get; init; }
     public int DisplayOrder { get; init; }
     public bool IsActive { get; init; } = true;
+    public decimal? MonthlyBudgetLimit { get; init; }
     public required long LockVersion { get; init; }
 }

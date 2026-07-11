@@ -11,6 +11,8 @@ public partial class App : Application
         .ConfigureServices((_, services) =>
         {
             services.AddSingleton<Services.ApiClient>();
+            services.AddSingleton<Services.CacheService>();
+            services.AddSingleton<Services.InfoBarService>();
             services.AddSingleton<ViewModels.LoginViewModel>();
             services.AddSingleton<ViewModels.DashboardViewModel>();
             services.AddSingleton<ViewModels.ExpensesViewModel>();
@@ -18,6 +20,8 @@ public partial class App : Application
             services.AddSingleton<ViewModels.AccountsViewModel>();
             services.AddSingleton<ViewModels.CategoriesViewModel>();
             services.AddSingleton<ViewModels.RecurringViewModel>();
+            services.AddSingleton<ViewModels.InvestmentsViewModel>();
+            services.AddSingleton<ViewModels.SettingsViewModel>();
         })
         .Build();
 

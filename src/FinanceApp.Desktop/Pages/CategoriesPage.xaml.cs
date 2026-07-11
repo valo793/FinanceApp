@@ -1,6 +1,7 @@
 using System;
 using FinanceApp.Contracts.Categories;
 using FinanceApp.Desktop.ViewModels;
+using FinanceApp.Desktop.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml.Controls;
 
@@ -22,7 +23,8 @@ public sealed partial class CategoriesPage : Page
         var dialog = new AddCategoryDialog
         {
             XamlRoot = this.XamlRoot,
-            Title = "Nova Categoria de Despesa"
+            Title = "Nova Categoria de Despesa",
+            IsExpense = true
         };
 
         var result = await dialog.ShowAsync();
@@ -37,10 +39,13 @@ public sealed partial class CategoriesPage : Page
             {
                 Name = dialog.CategoryName,
                 Color = dialog.CategoryColor,
-                Icon = dialog.CategoryIcon
+                Icon = dialog.CategoryIcon,
+                MonthlyBudgetLimit = dialog.CategoryBudgetLimit
             };
 
             await ViewModel.CreateExpenseCategoryCommand.ExecuteAsync(request);
+            var infoBarService = App.Host.Services.GetRequiredService<InfoBarService>();
+            infoBarService.Success("Categoria de despesa criada!");
         }
     }
 
@@ -68,6 +73,8 @@ public sealed partial class CategoriesPage : Page
             };
 
             await ViewModel.CreateIncomeCategoryCommand.ExecuteAsync(request);
+            var infoBarService = App.Host.Services.GetRequiredService<InfoBarService>();
+            infoBarService.Success("Categoria de receita criada!");
         }
     }
 
@@ -75,7 +82,23 @@ public sealed partial class CategoriesPage : Page
     {
         if (sender is Button button && button.Tag is Guid id)
         {
-            await ViewModel.DeleteExpenseCategoryCommand.ExecuteAsync(id);
+            var dialog = new ContentDialog
+            {
+                Title = "Apagar Categoria",
+                Content = "Tem certeza que deseja apagar esta categoria de despesa? Esta ação não pode ser desfeita.",
+                PrimaryButtonText = "Apagar",
+                CloseButtonText = "Cancelar",
+                DefaultButton = ContentDialogButton.Close,
+                XamlRoot = this.XamlRoot,
+                RequestedTheme = Microsoft.UI.Xaml.ElementTheme.Dark
+            };
+
+            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            {
+                await ViewModel.DeleteExpenseCategoryCommand.ExecuteAsync(id);
+                var infoBarService = App.Host.Services.GetRequiredService<InfoBarService>();
+                infoBarService.Success("Categoria de despesa apagada!");
+            }
         }
     }
 
@@ -83,7 +106,23 @@ public sealed partial class CategoriesPage : Page
     {
         if (sender is Button button && button.Tag is Guid id)
         {
-            await ViewModel.DeleteIncomeCategoryCommand.ExecuteAsync(id);
+            var dialog = new ContentDialog
+            {
+                Title = "Apagar Categoria",
+                Content = "Tem certeza que deseja apagar esta categoria de receita? Esta ação não pode ser desfeita.",
+                PrimaryButtonText = "Apagar",
+                CloseButtonText = "Cancelar",
+                DefaultButton = ContentDialogButton.Close,
+                XamlRoot = this.XamlRoot,
+                RequestedTheme = Microsoft.UI.Xaml.ElementTheme.Dark
+            };
+
+            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            {
+                await ViewModel.DeleteIncomeCategoryCommand.ExecuteAsync(id);
+                var infoBarService = App.Host.Services.GetRequiredService<InfoBarService>();
+                infoBarService.Success("Categoria de receita apagada!");
+            }
         }
     }
 }

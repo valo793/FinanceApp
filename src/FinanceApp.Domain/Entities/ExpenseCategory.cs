@@ -13,25 +13,28 @@ public sealed class ExpenseCategory : BaseEntity
     public bool IsSystem { get; private set; }
     public bool IsDefault { get; private set; }
     public bool IsActive { get; private set; } = true;
+    public decimal? MonthlyBudgetLimit { get; private set; }
 
     private ExpenseCategory() { }
 
-    public ExpenseCategory(Guid userId, string name, string? color = null, string? icon = null, bool isSystem = false)
+    public ExpenseCategory(Guid userId, string name, string? color = null, string? icon = null, bool isSystem = false, decimal? monthlyBudgetLimit = null)
     {
         UserId = userId;
         Name = name;
         Color = color;
         Icon = icon;
         IsSystem = isSystem;
+        MonthlyBudgetLimit = monthlyBudgetLimit;
     }
 
-    public void Update(string name, string? color, string? icon, int displayOrder, bool isActive)
+    public void Update(string name, string? color, string? icon, int displayOrder, bool isActive, decimal? monthlyBudgetLimit = null)
     {
         Name = name;
         Color = color;
         Icon = icon;
         DisplayOrder = displayOrder;
         IsActive = isActive;
+        MonthlyBudgetLimit = monthlyBudgetLimit;
         Touch();
     }
 }

@@ -55,6 +55,9 @@ public sealed partial class IncomesPage : Page
                 };
                 
                 await ViewModel.CreateTransactionCommand.ExecuteAsync(request);
+                
+                var infoBarService = App.Host.Services.GetRequiredService<InfoBarService>();
+                infoBarService.Success("Receita criada com sucesso!");
 
                 if (dialog.IsFixed && dialog.AccountId.HasValue)
                 {
@@ -93,7 +96,23 @@ public sealed partial class IncomesPage : Page
     {
         if (sender is Button button && button.Tag is Guid id)
         {
-            await ViewModel.DeleteTransactionCommand.ExecuteAsync(id);
+            var dialog = new ContentDialog
+            {
+                Title = "Apagar Receita",
+                Content = "Tem certeza que deseja apagar esta receita? Esta ação não pode ser desfeita.",
+                PrimaryButtonText = "Apagar",
+                CloseButtonText = "Cancelar",
+                DefaultButton = ContentDialogButton.Close,
+                XamlRoot = this.XamlRoot,
+                RequestedTheme = Microsoft.UI.Xaml.ElementTheme.Dark
+            };
+
+            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            {
+                await ViewModel.DeleteTransactionCommand.ExecuteAsync(id);
+                var infoBarService = App.Host.Services.GetRequiredService<InfoBarService>();
+                infoBarService.Success("Receita apagada com sucesso!");
+            }
         }
     }
 }

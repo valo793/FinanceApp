@@ -29,5 +29,13 @@
         <TextBox x:Name="IconInput" 
                  Header="Ícone (Nome do Símbolo)" 
                  PlaceholderText="Ex: Shop, Folder" />
+
+        <StackPanel x:Name="BudgetPanel" Spacing="8" Visibility="Collapsed">
+            <NumberBox x:Name="BudgetLimitInput"
+                       Header="Limite de Orçamento Mensal (Opcional)"
+                       PlaceholderText="Ex: 500.00"
+                       AcceptsExpression="True"
+                       SpinButtonPlacementMode="Compact" />
+        </StackPanel>
     </StackPanel>
 </ContentDialog>

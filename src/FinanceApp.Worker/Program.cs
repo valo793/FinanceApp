@@ -6,6 +6,8 @@ var builder = Host.CreateApplicationBuilder(args);
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHostedService<RecurringMaterializationWorker>();
+builder.Services.AddHostedService<SnapshotWorker>();
+builder.Services.AddHostedService<AssetPriceSyncWorker>();
 
 builder.Services.AddSerilog(config => config.WriteTo.Console());
 

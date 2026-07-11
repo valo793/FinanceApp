@@ -10,6 +10,8 @@ public sealed class User : BaseEntity
     public string Status { get; private set; } = "active";
     public bool EmailVerified { get; private set; }
     public bool MfaEnabled { get; private set; }
+    public string? MfaSecret { get; private set; }
+    public string? MfaBackupCodesHash { get; private set; }
     public int FailedLoginCount { get; private set; }
     public DateTimeOffset? LockoutUntil { get; private set; }
     public DateTimeOffset? LastLoginAt { get; private set; }
@@ -40,6 +42,28 @@ public sealed class User : BaseEntity
             LockoutUntil = DateTimeOffset.UtcNow.AddMinutes(lockoutMinutes);
         }
 
+        Touch();
+    }
+
+    public void EnableMfa(string secret, string backupCodesHash)
+    {
+        MfaSecret = secret;
+        MfaBackupCodesHash = backupCodesHash;
+        MfaEnabled = true;
+        Touch();
+    }
+
+    public void DisableMfa()
+    {
+        MfaSecret = null;
+        MfaBackupCodesHash = null;
+        MfaEnabled = false;
+        Touch();
+    }
+
+    public void UpdateBackupCodes(string backupCodesHash)
+    {
+        MfaBackupCodesHash = backupCodesHash;
         Touch();
     }
 }

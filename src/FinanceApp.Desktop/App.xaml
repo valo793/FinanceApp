@@ -1,12 +1,16 @@
 <Application
     x:Class="FinanceApp.Desktop.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="using:FinanceApp.Desktop.Converters">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
+
+            <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
+            <converters:HexToBrushConverter x:Key="HexToBrushConverter" />
 
             <Color x:Key="BgPrimary">#0B1020</Color>
             <Color x:Key="BgSurface">#12192B</Color>
@@ -23,6 +27,14 @@
             <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondary}" />
             <SolidColorBrush x:Key="AccentCyanBrush" Color="{StaticResource AccentCyan}" />
             <SolidColorBrush x:Key="AccentVioletBrush" Color="{StaticResource AccentViolet}" />
+            <SolidColorBrush x:Key="BorderSubtleBrush" Color="{StaticResource BorderSubtle}" />
+            <Style x:Key="RecurringFlyoutStyle" TargetType="FlyoutPresenter">
+                <Setter Property="Background" Value="{StaticResource BgElevatedBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Padding" Value="16" />
+                <Setter Property="CornerRadius" Value="12" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

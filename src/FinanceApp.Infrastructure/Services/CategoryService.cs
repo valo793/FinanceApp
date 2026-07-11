@@ -49,13 +49,14 @@ public sealed class CategoryService(FinanceDbContext dbContext) : ICategoryServi
                 Id = x.Id, Name = x.Name, ParentCategoryId = x.ParentCategoryId,
                 Color = x.Color, Icon = x.Icon, DisplayOrder = x.DisplayOrder,
                 IsSystem = x.IsSystem, IsDefault = x.IsDefault, IsActive = x.IsActive,
+                MonthlyBudgetLimit = x.MonthlyBudgetLimit,
                 LockVersion = x.LockVersion
             })
             .ToListAsync(cancellationToken);
 
     public async Task<CategoryDto> CreateExpenseCategoryAsync(Guid userId, CreateCategoryRequest request, CancellationToken cancellationToken)
     {
-        var entity = new ExpenseCategory(userId, request.Name, request.Color, request.Icon);
+        var entity = new ExpenseCategory(userId, request.Name, request.Color, request.Icon, false, request.MonthlyBudgetLimit);
         dbContext.ExpenseCategories.Add(entity);
         await dbContext.SaveChangesAsync(cancellationToken);
         return MapExpense(entity);
@@ -65,7 +66,7 @@ public sealed class CategoryService(FinanceDbContext dbContext) : ICategoryServi
     {
         var entity = await dbContext.ExpenseCategories.FirstOrDefaultAsync(x => x.UserId == userId && x.Id == id, cancellationToken)
             ?? throw new KeyNotFoundException("Categoria não encontrada.");
-        entity.Update(request.Name, request.Color, request.Icon, request.DisplayOrder, request.IsActive);
+        entity.Update(request.Name, request.Color, request.Icon, request.DisplayOrder, request.IsActive, request.MonthlyBudgetLimit);
         await dbContext.SaveChangesAsync(cancellationToken);
         return MapExpense(entity);
     }
@@ -104,6 +105,7 @@ public sealed class CategoryService(FinanceDbContext dbContext) : ICategoryServi
         Id = x.Id, Name = x.Name, ParentCategoryId = x.ParentCategoryId,
         Color = x.Color, Icon = x.Icon, DisplayOrder = x.DisplayOrder,
         IsSystem = x.IsSystem, IsDefault = x.IsDefault, IsActive = x.IsActive,
+        MonthlyBudgetLimit = x.MonthlyBudgetLimit,
         LockVersion = x.LockVersion
     };
 }

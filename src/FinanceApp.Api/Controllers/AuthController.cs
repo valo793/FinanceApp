@@ -2,6 +2,7 @@ using FinanceApp.Application.Abstractions;
 using FinanceApp.Contracts.Auth;
 using FinanceApp.Domain.Entities;
 using FinanceApp.Infrastructure.Persistence;
+using FinanceApp.Infrastructure.Security;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,6 +19,7 @@ public sealed class AuthController(
     IPasswordHasher passwordHasher,
     ITokenService tokenService,
     IAuditService auditService,
+    ICurrentUserContext currentUser,
     IValidator<LoginRequest> validator) : ControllerBase
 {
     [HttpPost("register")]
@@ -38,7 +40,7 @@ public sealed class AuthController(
         await dbContext.SaveChangesAsync(cancellationToken);
         await auditService.WriteAsync(user.Id, "auth.register", "user", user.Id, "success", "info", new { request.Email }, cancellationToken);
 
-        var tokens = tokenService.IssueTokens(user.Id, user.Email, profile.FullName, "dark");
+        var tokens = tokenService.IssueTokens(user.Id, user.Email, profile.FullName, "dark", user.MfaEnabled);
 
         // Create session for refresh token
         var refreshTokenHash = HashToken(tokens.RefreshToken);
@@ -78,10 +80,34 @@ public sealed class AuthController(
 
         user.RegisterLoginSuccess();
         var profile = await dbContext.UserProfiles.FirstAsync(x => x.UserId == user.Id, cancellationToken);
+
+        if (user.MfaEnabled)
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+            await auditService.WriteAsync(user.Id, "auth.login.mfa_pending", "user", user.Id, "success", "info", new { email }, cancellationToken);
+
+            var challengeToken = tokenService.IssueChallengeToken(user.Id, user.Email);
+            
+            return Ok(new LoginResponse
+            {
+                AccessToken = challengeToken,
+                RefreshToken = string.Empty,
+                ExpiresIn = 300,
+                RequiresMfa = true,
+                User = new CurrentUserDto
+                {
+                    Id = user.Id,
+                    Email = user.Email,
+                    FullName = profile.FullName,
+                    Theme = "dark"
+                }
+            });
+        }
+
         await dbContext.SaveChangesAsync(cancellationToken);
         await auditService.WriteAsync(user.Id, "auth.login.success", "user", user.Id, "success", "info", new { email }, cancellationToken);
 
-        var tokens = tokenService.IssueTokens(user.Id, user.Email, profile.FullName, "dark");
+        var tokens = tokenService.IssueTokens(user.Id, user.Email, profile.FullName, "dark", user.MfaEnabled);
 
         // Create session
         var refreshTokenHash = HashToken(tokens.RefreshToken);
@@ -90,6 +116,128 @@ public sealed class AuthController(
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Ok(tokens);
+    }
+
+    [HttpPost("login/mfa")]
+    public async Task<IActionResult> LoginMfa([FromBody] MfaVerifyRequest request, CancellationToken cancellationToken)
+    {
+        var principal = tokenService.ValidateChallengeToken(request.ChallengeToken);
+        if (principal is null)
+            return Unauthorized(new ProblemDetails { Title = "Token de desafio inválido ou expirado.", Status = 401 });
+
+        var userIdStr = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+                        ?? principal.FindFirst("sub")?.Value;
+        if (!Guid.TryParse(userIdStr, out var userId))
+            return Unauthorized();
+
+        var user = await dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId, cancellationToken);
+        if (user is null || user.MfaSecret is null)
+            return Unauthorized();
+
+        bool isMfaValid = TotpHelper.VerifyCode(user.MfaSecret, request.Code, DateTimeOffset.UtcNow);
+        bool isBackupCodeUsed = false;
+
+        if (!isMfaValid && !string.IsNullOrEmpty(user.MfaBackupCodesHash))
+        {
+            var codeHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(request.Code.Trim())));
+            var hashesList = user.MfaBackupCodesHash.Split(',').ToList();
+
+            if (hashesList.Contains(codeHash))
+            {
+                hashesList.Remove(codeHash);
+                var newBackupCodesHash = hashesList.Count > 0 ? string.Join(",", hashesList) : null;
+                user.UpdateBackupCodes(newBackupCodesHash);
+                isMfaValid = true;
+                isBackupCodeUsed = true;
+            }
+        }
+
+        if (!isMfaValid)
+        {
+            await auditService.WriteAsync(user.Id, "auth.login.mfa.failed", "user", user.Id, "failed", "warning", new { }, cancellationToken);
+            return Unauthorized(new ProblemDetails { Title = "Código MFA inválido.", Status = 401 });
+        }
+
+        if (isBackupCodeUsed)
+        {
+            await auditService.WriteAsync(user.Id, "auth.login.mfa.backup_used", "user", user.Id, "success", "info", new { }, cancellationToken);
+        }
+
+        user.RegisterLoginSuccess();
+        var profile = await dbContext.UserProfiles.FirstAsync(x => x.UserId == user.Id, cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await auditService.WriteAsync(user.Id, "auth.login.success", "user", user.Id, "success", "info", new { email = user.Email }, cancellationToken);
+
+        var tokens = tokenService.IssueTokens(user.Id, user.Email, profile.FullName, "dark", user.MfaEnabled);
+
+        var refreshTokenHash = HashToken(tokens.RefreshToken);
+        var session = new Session(user.Id, refreshTokenHash, DateTimeOffset.UtcNow.AddDays(7), "Desktop Client");
+        dbContext.Sessions.Add(session);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return Ok(tokens);
+    }
+
+    [HttpGet("mfa/setup")]
+    [Authorize]
+    public async Task<IActionResult> SetupMfa(CancellationToken cancellationToken)
+    {
+        var user = await dbContext.Users.FirstAsync(x => x.Id == currentUser.UserId, cancellationToken);
+        var secret = TotpHelper.GenerateSecretKey();
+        var otpauth = TotpHelper.GetQrCodeUri("FinanceApp", user.Email, secret);
+
+        return Ok(new MfaSetupResponse { SecretKey = secret, OtpAuthUri = otpauth });
+    }
+
+    [HttpPost("mfa/enable")]
+    [Authorize]
+    public async Task<IActionResult> EnableMfa([FromBody] MfaEnableRequest request, CancellationToken cancellationToken)
+    {
+        var user = await dbContext.Users.FirstAsync(x => x.Id == currentUser.UserId, cancellationToken);
+        
+        if (!TotpHelper.VerifyCode(request.SecretKey, request.Code, DateTimeOffset.UtcNow))
+        {
+            return BadRequest(new ProblemDetails { Title = "Código de verificação inválido.", Status = 400 });
+        }
+
+        var backupCodes = Enumerable.Range(0, 8)
+            .Select(_ => RandomNumberGenerator.GetInt32(10000000, 99999999).ToString())
+            .ToList();
+
+        var hashes = backupCodes.Select(code =>
+        {
+            var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(code));
+            return Convert.ToBase64String(bytes);
+        });
+        var backupCodesHash = string.Join(",", hashes);
+
+        user.EnableMfa(request.SecretKey, backupCodesHash);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await auditService.WriteAsync(user.Id, "auth.mfa.enabled", "user", user.Id, "success", "info", new { }, cancellationToken);
+
+        return Ok(new { BackupCodes = backupCodes });
+    }
+
+    [HttpPost("mfa/disable")]
+    [Authorize]
+    public async Task<IActionResult> DisableMfa([FromBody] MfaEnableRequest request, CancellationToken cancellationToken)
+    {
+        var user = await dbContext.Users.FirstAsync(x => x.Id == currentUser.UserId, cancellationToken);
+        if (user.MfaSecret is null)
+        {
+            return BadRequest(new ProblemDetails { Title = "MFA não está ativo.", Status = 400 });
+        }
+
+        if (!TotpHelper.VerifyCode(user.MfaSecret, request.Code, DateTimeOffset.UtcNow))
+        {
+            return BadRequest(new ProblemDetails { Title = "Código de verificação inválido.", Status = 400 });
+        }
+
+        user.DisableMfa();
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await auditService.WriteAsync(user.Id, "auth.mfa.disabled", "user", user.Id, "success", "info", new { }, cancellationToken);
+
+        return Ok();
     }
 
     [HttpPost("refresh")]
@@ -108,7 +256,7 @@ public sealed class AuthController(
         var profile = await dbContext.UserProfiles.FirstAsync(x => x.UserId == user.Id, cancellationToken);
 
         // Rotate: revoke current session and create a new one
-        var newTokens = tokenService.IssueTokens(user.Id, user.Email, profile.FullName, "dark");
+        var newTokens = tokenService.IssueTokens(user.Id, user.Email, profile.FullName, "dark", user.MfaEnabled);
         var newHash = HashToken(newTokens.RefreshToken);
         var newSession = new Session(user.Id, newHash, DateTimeOffset.UtcNow.AddDays(7), session.DeviceName);
         session.MarkReplaced(newSession.Id);

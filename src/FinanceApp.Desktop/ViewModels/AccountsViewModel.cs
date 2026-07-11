@@ -6,7 +6,7 @@ using FinanceApp.Desktop.Services;
 
 namespace FinanceApp.Desktop.ViewModels;
 
-public partial class AccountsViewModel(ApiClient apiClient) : ObservableObject
+public partial class AccountsViewModel(ApiClient apiClient, CacheService cacheService) : ObservableObject
 {
     [ObservableProperty] private ObservableCollection<AccountDto> accounts = [];
     [ObservableProperty] private bool isBusy;
@@ -19,12 +19,33 @@ public partial class AccountsViewModel(ApiClient apiClient) : ObservableObject
         {
             IsBusy = true;
             ErrorMessage = null;
+
+            // Try loading from local cache first
+            try
+            {
+                var cached = await cacheService.GetAsync<IReadOnlyCollection<AccountDto>>("accounts_list", TimeSpan.FromMinutes(5));
+                if (cached is not null)
+                {
+                    Accounts = new ObservableCollection<AccountDto>(cached);
+                }
+            }
+            catch
+            {
+                // Ignore cache failures
+            }
+
             var result = await apiClient.GetAccountsAsync();
             Accounts = new ObservableCollection<AccountDto>(result);
+
+            // Save to cache
+            await cacheService.SetAsync("accounts_list", result);
         }
         catch (Exception ex)
         {
-            ErrorMessage = ex.Message;
+            if (Accounts.Count == 0)
+            {
+                ErrorMessage = ex.Message;
+            }
         }
         finally
         {

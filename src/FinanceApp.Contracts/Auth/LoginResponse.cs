@@ -15,4 +15,5 @@ public sealed class CurrentUserDto
     public required string FullName { get; init; }
     public required string Theme { get; init; }
     public required string Email { get; init; }
+    public bool MfaEnabled { get; init; }
 }

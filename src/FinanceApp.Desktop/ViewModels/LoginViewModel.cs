@@ -13,6 +13,7 @@ public partial class LoginViewModel(ApiClient apiClient) : ObservableObject
     [ObservableProperty] private bool isBusy;
 
     public event Action? LoginSucceeded;
+    public event Action<string>? MfaChallengeRequested;
 
     [RelayCommand]
     private async Task LoginAsync()
@@ -22,7 +23,7 @@ public partial class LoginViewModel(ApiClient apiClient) : ObservableObject
             IsBusy = true;
             StatusMessage = null;
 
-            await apiClient.LoginAsync(new LoginRequest
+            var response = await apiClient.LoginAsync(new LoginRequest
             {
                 Email = Email,
                 Password = Password,
@@ -30,12 +31,43 @@ public partial class LoginViewModel(ApiClient apiClient) : ObservableObject
                 TrustDevice = true
             });
 
+            if (response is not null && response.RequiresMfa)
+            {
+                MfaChallengeRequested?.Invoke(response.AccessToken);
+                return;
+            }
+
             StatusMessage = "Login realizado com sucesso.";
             LoginSucceeded?.Invoke();
         }
         catch (Exception ex)
         {
             StatusMessage = ex.Message;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task<bool> VerifyMfaCodeAsync(MfaVerifyRequest request)
+    {
+        try
+        {
+            IsBusy = true;
+            StatusMessage = null;
+
+            await apiClient.LoginMfaAsync(request);
+
+            StatusMessage = "Login realizado com sucesso.";
+            LoginSucceeded?.Invoke();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Código MFA inválido ou expirado: {ex.Message}";
+            return false;
         }
         finally
         {

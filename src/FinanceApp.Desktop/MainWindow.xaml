@@ -44,5 +44,14 @@
             </NavigationView.FooterMenuItems>
             <Frame x:Name="RootFrame" />
         </NavigationView>
+
+        <InfoBar x:Name="GlobalInfoBar"
+                 IsOpen="False"
+                 Severity="Informational"
+                 IsIconVisible="True"
+                 Message=""
+                 Margin="24"
+                 VerticalAlignment="Top"
+                 HorizontalAlignment="Right" />
     </Grid>
 </Window>

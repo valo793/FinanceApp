@@ -1,5 +1,6 @@
 using System;
 using FinanceApp.Desktop.ViewModels;
+using FinanceApp.Desktop.Services;
 using FinanceApp.Contracts.Accounts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml.Controls;
@@ -43,6 +44,8 @@ public sealed partial class AccountsPage : Page
             };
             
             await ViewModel.CreateAccountCommand.ExecuteAsync(request);
+            var infoBarService = App.Host.Services.GetRequiredService<InfoBarService>();
+            infoBarService.Success("Conta criada com sucesso!");
         }
     }
 
@@ -53,6 +56,30 @@ public sealed partial class AccountsPage : Page
             if (dto.IsActive == toggle.IsOn)
             {
                 return;
+            }
+
+            // Only confirm when deactivating (turning off)
+            if (!toggle.IsOn)
+            {
+                var confirmDialog = new ContentDialog
+                {
+                    Title = "Desativar Conta",
+                    Content = $"Tem certeza que deseja desativar a conta \"{dto.Name}\"? Ela deixará de constar no cálculo do seu saldo.",
+                    PrimaryButtonText = "Desativar",
+                    CloseButtonText = "Cancelar",
+                    DefaultButton = ContentDialogButton.Close,
+                    XamlRoot = this.XamlRoot,
+                    RequestedTheme = Microsoft.UI.Xaml.ElementTheme.Dark
+                };
+
+                if (await confirmDialog.ShowAsync() != ContentDialogResult.Primary)
+                {
+                    // Revert the toggle state without triggering event
+                    toggle.Toggled -= AccountActive_Toggled;
+                    toggle.IsOn = true;
+                    toggle.Toggled += AccountActive_Toggled;
+                    return;
+                }
             }
 
             var request = new UpdateAccountRequest
@@ -68,6 +95,8 @@ public sealed partial class AccountsPage : Page
             };
 
             await ViewModel.UpdateAccountCommand.ExecuteAsync((dto.Id, request));
+            var infoBarService = App.Host.Services.GetRequiredService<InfoBarService>();
+            infoBarService.Success(toggle.IsOn ? $"Conta \"{dto.Name}\" reativada!" : $"Conta \"{dto.Name}\" desativada!");
         }
     }
 }

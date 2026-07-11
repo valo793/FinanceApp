@@ -13,6 +13,10 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
 
+        // Register InfoBar
+        var infoBarService = App.Host.Services.GetRequiredService<InfoBarService>();
+        infoBarService.Register(GlobalInfoBar);
+
         // Start with login page, hide nav
         NavView.IsPaneVisible = false;
         RootFrame.Navigate(typeof(LoginPage));
@@ -54,7 +58,7 @@ public sealed partial class MainWindow : Window
             var tag = item.Tag?.ToString();
             if (tag == "logout")
             {
-                _ = LogoutAsync();
+                _ = ConfirmLogoutAsync();
                 return;
             }
 
@@ -71,6 +75,53 @@ public sealed partial class MainWindow : Window
                 _ => typeof(DashboardPage)
             };
             RootFrame.Navigate(pageType);
+        }
+    }
+
+    private async Task ConfirmLogoutAsync()
+    {
+        var dialog = new ContentDialog
+        {
+            Title = "Sair da Conta",
+            Content = "Tem certeza que deseja sair de sua sessão atual?",
+            PrimaryButtonText = "Sair",
+            CloseButtonText = "Cancelar",
+            DefaultButton = ContentDialogButton.Close,
+            XamlRoot = this.RootFrame.XamlRoot,
+            RequestedTheme = ElementTheme.Dark
+        };
+
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+        {
+            await LogoutAsync();
+        }
+        else
+        {
+            var currentType = RootFrame.CurrentSourcePageType;
+            foreach (var menuItem in NavView.MenuItems)
+            {
+                if (menuItem is NavigationViewItem navItem)
+                {
+                    var tag = navItem.Tag?.ToString();
+                    var pageType = tag switch
+                    {
+                        "dashboard" => typeof(DashboardPage),
+                        "expenses" => typeof(ExpensesPage),
+                        "incomes" => typeof(IncomesPage),
+                        "accounts" => typeof(AccountsPage),
+                        "categories" => typeof(CategoriesPage),
+                        "recurring" => typeof(RecurringPage),
+                        "investments" => typeof(InvestmentsPage),
+                        "settings" => typeof(SettingsPage),
+                        _ => null
+                    };
+                    if (pageType == currentType)
+                    {
+                        NavView.SelectedItem = navItem;
+                        break;
+                    }
+                }
+            }
         }
     }
 

@@ -12,6 +12,13 @@ public sealed class DashboardOverviewDto
     public int CriticalAlerts { get; init; }
     public IReadOnlyCollection<CategoryAmountDto> ExpenseByCategory { get; init; } = [];
     public IReadOnlyCollection<TimeSeriesPointDto> CashflowSeries { get; init; } = [];
+    public IReadOnlyCollection<NetWorthPointDto> NetWorthSeries { get; init; } = [];
+}
+
+public sealed class NetWorthPointDto
+{
+    public DateOnly Date { get; init; }
+    public decimal Balance { get; init; }
 }
 
 public sealed class CategoryAmountDto
@@ -19,6 +26,8 @@ public sealed class CategoryAmountDto
     public required string Name { get; init; }
     public decimal Amount { get; init; }
     public decimal Percentage { get; init; }
+    public decimal? BudgetLimit { get; init; }
+    public decimal BudgetPercentage => (BudgetLimit.HasValue && BudgetLimit.Value > 0) ? Math.Min(Math.Round(Amount / BudgetLimit.Value * 100, 1), 100) : 0;
 }
 
 public sealed class TimeSeriesPointDto

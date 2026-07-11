@@ -19,6 +19,8 @@ public sealed class FinanceDbContext(DbContextOptions<FinanceDbContext> options)
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<BalanceSnapshot> BalanceSnapshots => Set<BalanceSnapshot>();
+    public DbSet<InvestmentSnapshot> InvestmentSnapshots => Set<InvestmentSnapshot>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

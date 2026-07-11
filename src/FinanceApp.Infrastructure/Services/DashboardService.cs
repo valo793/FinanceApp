@@ -20,7 +20,11 @@ public sealed class DashboardService(FinanceDbContext dbContext) : IDashboardSer
 
         var expenseCategories = await dbContext.ExpenseCategories
             .Where(x => x.UserId == userId)
-            .ToDictionaryAsync(x => x.Id, x => x.Name, cancellationToken);
+            .ToDictionaryAsync(x => x.Id, x => x, cancellationToken);
+
+        var investments = await dbContext.Investments
+            .Where(x => x.UserId == userId && x.IsActive)
+            .ToListAsync(cancellationToken);
 
         var currentBalance = accounts.Sum(x => x.CurrentBalanceCached);
         var monthIncome = transactions.Where(x => x.TransactionType == TransactionTypes.Income && x.Status == TransactionStatuses.Confirmed).Sum(x => x.EffectiveAmount);
@@ -29,6 +33,7 @@ public sealed class DashboardService(FinanceDbContext dbContext) : IDashboardSer
         var plannedIncome = transactions.Where(x => x.TransactionType == TransactionTypes.Income && x.Status == TransactionStatuses.Planned).Sum(x => x.EffectiveAmount);
         var plannedExpenses = transactions.Where(x => x.TransactionType == TransactionTypes.Expense && x.Status == TransactionStatuses.Planned).Sum(x => x.EffectiveAmount);
         var projectedBalance = currentBalance + plannedIncome - plannedExpenses;
+        var investedNetWorth = investments.Sum(x => x.Quantity * x.CurrentPrice);
 
         var totalExpenseAmount = transactions.Where(x => x.TransactionType == TransactionTypes.Expense).Sum(x => x.EffectiveAmount);
         var expenseByCategory = transactions
@@ -36,13 +41,16 @@ public sealed class DashboardService(FinanceDbContext dbContext) : IDashboardSer
             .GroupBy(x => x.ExpenseCategoryId)
             .Select(g =>
             {
-                var categoryName = g.Key.HasValue && expenseCategories.TryGetValue(g.Key.Value, out var name) ? name : "Sem categoria";
+                var category = g.Key.HasValue && expenseCategories.TryGetValue(g.Key.Value, out var cat) ? cat : null;
+                var categoryName = category?.Name ?? "Sem categoria";
+                var budgetLimit = category?.MonthlyBudgetLimit;
                 var amount = g.Sum(x => x.EffectiveAmount);
                 return new CategoryAmountDto
                 {
                     Name = categoryName,
                     Amount = amount,
-                    Percentage = totalExpenseAmount == 0 ? 0 : Math.Round(amount / totalExpenseAmount * 100, 1)
+                    Percentage = totalExpenseAmount == 0 ? 0 : Math.Round(amount / totalExpenseAmount * 100, 1),
+                    BudgetLimit = budgetLimit
                 };
             })
             .OrderByDescending(x => x.Amount)
@@ -61,6 +69,31 @@ public sealed class DashboardService(FinanceDbContext dbContext) : IDashboardSer
             })
             .ToList();
 
+        // Load historical balance snapshots for net worth series
+        var snapshots = await dbContext.BalanceSnapshots
+            .Where(x => x.UserId == userId && x.SnapshotDate >= from && x.SnapshotDate <= to)
+            .ToListAsync(cancellationToken);
+
+        var netWorthSeries = snapshots
+            .GroupBy(x => x.SnapshotDate)
+            .Select(g => new NetWorthPointDto
+            {
+                Date = g.Key,
+                Balance = g.Sum(x => x.Balance)
+            })
+            .OrderBy(x => x.Date)
+            .ToList();
+
+        // Fallback for new users or empty snapshots
+        if (netWorthSeries.Count == 0)
+        {
+            netWorthSeries.Add(new NetWorthPointDto
+            {
+                Date = DateOnly.FromDateTime(DateTime.Today),
+                Balance = currentBalance
+            });
+        }
+
         return new DashboardOverviewDto
         {
             CurrentBalance = currentBalance,
@@ -68,11 +101,12 @@ public sealed class DashboardService(FinanceDbContext dbContext) : IDashboardSer
             MonthIncome = monthIncome,
             MonthExpenses = monthExpenses,
             NetResult = monthIncome - monthExpenses,
-            InvestedNetWorth = 0m,
+            InvestedNetWorth = investedNetWorth,
             PendingRecurrences = await dbContext.RecurringTransactions.CountAsync(x => x.UserId == userId && x.IsActive && !x.IsPaused, cancellationToken),
             CriticalAlerts = 0,
             ExpenseByCategory = expenseByCategory,
-            CashflowSeries = series
+            CashflowSeries = series,
+            NetWorthSeries = netWorthSeries
         };
     }
 }

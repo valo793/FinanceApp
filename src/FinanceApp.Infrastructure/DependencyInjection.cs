@@ -24,6 +24,10 @@ public static class DependencyInjection
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IWalletService, WalletService>();
         services.AddScoped<IRecurringService, RecurringService>();
+        services.AddScoped<IInvestmentService, InvestmentService>();
+        services.AddScoped<IUserPreferenceService, UserPreferenceService>();
+        services.AddScoped<IProjectionService, ProjectionService>();
+        services.AddHttpClient<IAssetPriceService, YahooFinancePriceService>();
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserContext, CurrentUserContext>();
 
