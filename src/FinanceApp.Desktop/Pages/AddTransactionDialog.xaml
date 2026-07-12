@@ -11,44 +11,51 @@
 
     <StackPanel Spacing="16" Width="320" Margin="0,10,0,0">
         <TextBox x:Name="DescriptionInput" 
-                 Header="Descrição" 
-                 PlaceholderText="Ex: Compra de Supermercado" />
+                 Header="Descrição *" 
+                 PlaceholderText="Ex: Compra de Supermercado"
+                 ToolTipService.ToolTip="Identificação do lançamento (ex: Supermercado Assaí, Conta de Energia)." />
                  
         <NumberBox x:Name="AmountInput" 
-                   Header="Valor (R$)" 
+                   Header="Valor (R$) *" 
                    Value="0" 
-                   SpinButtonPlacementMode="Compact" />
+                   SpinButtonPlacementMode="Compact"
+                   ToolTipService.ToolTip="O valor financeiro da transação. Deve ser maior que zero." />
                    
         <DatePicker x:Name="DateInput" 
-                    Header="Data de Competência" 
-                    HorizontalAlignment="Stretch" />
+                    Header="Data de Competência *" 
+                    HorizontalAlignment="Stretch"
+                    ToolTipService.ToolTip="A data em que o fato financeiro ocorre (data da compra ou vencimento)." />
                     
         <ComboBox x:Name="AccountInput" 
-                  Header="Conta" 
+                  Header="Conta *" 
                   HorizontalAlignment="Stretch"
                   DisplayMemberPath="Name"
-                  SelectedValuePath="Id" />
+                  SelectedValuePath="Id"
+                  ToolTipService.ToolTip="A conta vinculada a este lançamento (onde o saldo será deduzido ou adicionado)." />
                   
         <ComboBox x:Name="CategoryInput" 
-                  Header="Categoria" 
+                  Header="Categoria *" 
                   HorizontalAlignment="Stretch"
                   DisplayMemberPath="Name"
-                  SelectedValuePath="Id" />
+                  SelectedValuePath="Id"
+                  ToolTipService.ToolTip="A classificação de gastos ou receitas (ex: Alimentação, Lazer)." />
                   
         <CheckBox x:Name="IsFixedInput" 
                   Content="Lançamento Fixo (Recorrente)" 
                   Checked="IsFixedInput_Checked"
                   Unchecked="IsFixedInput_Unchecked"
-                  Margin="0,8,0,0" />
+                  Margin="0,8,0,0"
+                  ToolTipService.ToolTip="Se marcado, esta transação servirá de modelo para se repetir ciclicamente no futuro." />
 
         <StackPanel x:Name="RecurrenceFields" 
                     Spacing="12" 
                     Visibility="Collapsed" 
                     Margin="0,8,0,0">
             <ComboBox x:Name="FrequencyInput" 
-                      Header="Frequência" 
+                      Header="Frequência *" 
                       HorizontalAlignment="Stretch" 
-                      SelectedIndex="2">
+                      SelectedIndex="2"
+                      ToolTipService.ToolTip="A periodicidade da repetição (ex: mensal, semanal).">
                 <ComboBoxItem Content="Diário" Tag="daily" />
                 <ComboBoxItem Content="Semanal" Tag="weekly" />
                 <ComboBoxItem Content="Mensal" Tag="monthly" />
@@ -56,14 +63,16 @@
             </ComboBox>
             
             <NumberBox x:Name="IntervalInput" 
-                       Header="Intervalo" 
+                       Header="Intervalo *" 
                        Value="1" 
                        SpinButtonPlacementMode="Compact" 
-                       Minimum="1" />
+                       Minimum="1"
+                       ToolTipService.ToolTip="A cada quantos períodos a transação se repete (ex: Intervalo 2 com frequência Mensal = a cada 2 meses)." />
                        
             <CheckBox x:Name="AutoConfirmInput" 
                       Content="Auto-Confirmar (Efetivar automaticamente)" 
-                      IsChecked="True" />
+                      IsChecked="True"
+                      ToolTipService.ToolTip="Se marcado, o sistema efetivará o saldo automaticamente na data de vencimento. Caso contrário, ficará planejado pendente de confirmação." />
         </StackPanel>
     </StackPanel>
 </ContentDialog>

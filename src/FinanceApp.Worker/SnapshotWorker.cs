@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using FinanceApp.Application.Abstractions;
 using FinanceApp.Domain.Entities;
 using FinanceApp.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -25,23 +27,21 @@ public sealed class SnapshotWorker(
             {
                 using var scope = serviceScopeFactory.CreateScope();
                 var dbContext = scope.ServiceProvider.GetRequiredService<FinanceDbContext>();
+                var priceService = scope.ServiceProvider.GetRequiredService<IAssetPriceService>();
                 var today = DateOnly.FromDateTime(DateTime.Today);
 
-                // Load all active users
                 var users = await dbContext.Users
                     .Where(x => x.Status == "active")
                     .ToListAsync(stoppingToken);
 
                 foreach (var user in users)
                 {
-                    // Load all active accounts for this user
                     var accounts = await dbContext.Accounts
                         .Where(x => x.UserId == user.Id && !x.IsDeleted && x.IsActive)
                         .ToListAsync(stoppingToken);
 
                     foreach (var account in accounts)
                     {
-                        // Check the most recent snapshot for this account
                         var lastSnapshot = await dbContext.BalanceSnapshots
                             .Where(x => x.AccountId == account.Id)
                             .OrderByDescending(x => x.SnapshotDate)
@@ -49,7 +49,6 @@ public sealed class SnapshotWorker(
 
                         if (lastSnapshot is null)
                         {
-                            // No snapshots at all: create one for today
                             var snapshot = new BalanceSnapshot(user.Id, account.Id, account.CurrentBalanceCached, today);
                             dbContext.BalanceSnapshots.Add(snapshot);
                             await dbContext.SaveChangesAsync(stoppingToken);
@@ -57,11 +56,20 @@ public sealed class SnapshotWorker(
                         }
                         else if (lastSnapshot.SnapshotDate < today)
                         {
-                            // Fill gaps between the last snapshot and today
+                            var transactions = await dbContext.Transactions
+                                .Where(t => t.AccountId == account.Id && !t.IsDeleted && t.CompetenceDate > lastSnapshot.SnapshotDate && t.CompetenceDate <= today)
+                                .ToListAsync(stoppingToken);
+
+                            var startingValue = lastSnapshot.Balance;
                             var fillDate = lastSnapshot.SnapshotDate.AddDays(1);
                             while (fillDate <= today)
                             {
-                                var snapshot = new BalanceSnapshot(user.Id, account.Id, account.CurrentBalanceCached, fillDate);
+                                var daySignedSum = transactions
+                                    .Where(t => t.CompetenceDate > lastSnapshot.SnapshotDate && t.CompetenceDate <= fillDate)
+                                    .Sum(t => t.SignedAmount());
+                                
+                                var dayBalance = startingValue + daySignedSum;
+                                var snapshot = new BalanceSnapshot(user.Id, account.Id, dayBalance, fillDate);
                                 dbContext.BalanceSnapshots.Add(snapshot);
                                 fillDate = fillDate.AddDays(1);
                             }
@@ -70,7 +78,6 @@ public sealed class SnapshotWorker(
                         }
                     }
 
-                    // Load all active investments for this user
                     var investments = await dbContext.Investments
                         .Where(x => x.UserId == user.Id && x.IsActive)
                         .ToListAsync(stoppingToken);
@@ -91,10 +98,57 @@ public sealed class SnapshotWorker(
                         }
                         else if (lastInvSnapshot.SnapshotDate < today)
                         {
-                            var fillDate = lastInvSnapshot.SnapshotDate.AddDays(1);
+                            var startDate = lastInvSnapshot.SnapshotDate.AddDays(1);
+                            Dictionary<DateOnly, decimal> historicalPrices = null;
+
+                            if (!string.IsNullOrWhiteSpace(investment.Ticker))
+                            {
+                                historicalPrices = await priceService.GetHistoricalPricesAsync(investment.Ticker, startDate, today, stoppingToken);
+                            }
+
+                            var fillDate = startDate;
+                            var lastKnownPrice = investment.CurrentPrice;
+
                             while (fillDate <= today)
                             {
-                                var snapshot = new InvestmentSnapshot(user.Id, investment.Id, investment.CurrentValue, fillDate);
+                                decimal dayValue = 0m;
+                                if (!string.IsNullOrWhiteSpace(investment.Ticker) && historicalPrices != null)
+                                {
+                                    if (historicalPrices.TryGetValue(fillDate, out var histPrice))
+                                    {
+                                        lastKnownPrice = histPrice;
+                                    }
+                                    dayValue = investment.Quantity * lastKnownPrice;
+                                }
+                                else if (investment.IndexerType != null)
+                                {
+                                    int daysBack = today.DayNumber - fillDate.DayNumber;
+                                    double annualRate = 0.0;
+                                    if (investment.IndexerType == "cdi")
+                                    {
+                                        var ratePercent = investment.IndexerRate ?? 100m;
+                                        annualRate = 0.105 * (double)(ratePercent / 100m);
+                                    }
+                                    else if (investment.IndexerType == "ipca")
+                                    {
+                                        var addRate = investment.IndexerAdditionalRate ?? 0m;
+                                        annualRate = 0.045 + (double)(addRate / 100m);
+                                    }
+                                    else if (investment.IndexerType == "pre")
+                                    {
+                                        var ratePercent = investment.IndexerRate ?? 0m;
+                                        annualRate = (double)(ratePercent / 100m);
+                                    }
+
+                                    var dailyFactor = Math.Pow(1.0 + annualRate, 1.0 / 365.0);
+                                    dayValue = investment.CurrentValue / (decimal)Math.Pow(dailyFactor, daysBack);
+                                }
+                                else
+                                {
+                                    dayValue = investment.CurrentValue;
+                                }
+
+                                var snapshot = new InvestmentSnapshot(user.Id, investment.Id, dayValue, fillDate);
                                 dbContext.InvestmentSnapshots.Add(snapshot);
                                 fillDate = fillDate.AddDays(1);
                             }
@@ -109,7 +163,6 @@ public sealed class SnapshotWorker(
                 logger.LogError(ex, "Balance Snapshot worker loop failed.");
             }
 
-            // Run check every 1 hour
             await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
         }
     }

@@ -26,12 +26,15 @@
 
                 <Button Grid.Column="1"
                         Command="{x:Bind ViewModel.ToggleValuesVisibilityCommand}"
-                        Content="{x:Bind ViewModel.VisibilityIcon, Mode=OneWay}"
                         Background="Transparent"
                         BorderThickness="0"
-                        FontSize="20"
                         Padding="8"
-                        VerticalAlignment="Center" />
+                        VerticalAlignment="Center"
+                        ToolTipService.ToolTip="Alternar visibilidade dos valores do painel (Ocultar/Exibir).">
+                    <FontIcon Glyph="{x:Bind ViewModel.VisibilityGlyph, Mode=OneWay}"
+                              FontFamily="Segoe MDL2 Assets"
+                              FontSize="20" />
+                </Button>
             </Grid>
 
             <ProgressBar IsIndeterminate="True"

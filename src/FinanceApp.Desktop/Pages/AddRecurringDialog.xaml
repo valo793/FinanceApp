@@ -11,38 +11,44 @@
 
     <StackPanel Spacing="12" Width="320" Margin="0,10,0,0">
         <TextBox x:Name="DescriptionInput" 
-                 Header="Descrição" 
-                 PlaceholderText="Ex: Assinatura Netflix, Aluguel" />
+                 Header="Descrição *" 
+                 PlaceholderText="Ex: Assinatura Netflix, Aluguel"
+                 ToolTipService.ToolTip="Nome ou descrição do lançamento recorrente." />
                  
         <NumberBox x:Name="AmountInput" 
-                   Header="Valor Padrão (R$)" 
+                   Header="Valor Padrão (R$) *" 
                    Value="0" 
-                   SpinButtonPlacementMode="Compact" />
+                   SpinButtonPlacementMode="Compact"
+                   ToolTipService.ToolTip="O valor financeiro estimado que será cobrado ou creditado a cada ocorrência." />
                    
         <ComboBox x:Name="KindInput" 
-                  Header="Tipo de Lançamento" 
+                  Header="Tipo de Lançamento *" 
                   HorizontalAlignment="Stretch" 
-                  SelectedIndex="0">
+                  SelectedIndex="0"
+                  ToolTipService.ToolTip="Selecione se é uma despesa (saída de caixa) ou uma receita (entrada de caixa).">
             <ComboBoxItem Content="Despesa (Expense)" Tag="expense" />
             <ComboBoxItem Content="Receita (Income)" Tag="income" />
         </ComboBox>
         
         <ComboBox x:Name="AccountInput" 
-                  Header="Conta Associada" 
+                  Header="Conta Associada *" 
                   HorizontalAlignment="Stretch"
                   DisplayMemberPath="Name"
-                  SelectedValuePath="Id" />
+                  SelectedValuePath="Id"
+                  ToolTipService.ToolTip="A conta padrão onde a transação recorrente será gerada." />
                   
         <ComboBox x:Name="CategoryInput" 
-                  Header="Categoria" 
+                  Header="Categoria *" 
                   HorizontalAlignment="Stretch"
                   DisplayMemberPath="Name"
-                  SelectedValuePath="Id" />
+                  SelectedValuePath="Id"
+                  ToolTipService.ToolTip="Categoria para fins de orçamento e classificação do lançamento." />
                   
         <ComboBox x:Name="FrequencyInput" 
-                  Header="Frequência" 
+                  Header="Frequência *" 
                   HorizontalAlignment="Stretch" 
-                  SelectedIndex="2">
+                  SelectedIndex="2"
+                  ToolTipService.ToolTip="Periodicidade do ciclo de repetição.">
             <ComboBoxItem Content="Diário" Tag="daily" />
             <ComboBoxItem Content="Semanal" Tag="weekly" />
             <ComboBoxItem Content="Mensal" Tag="monthly" />
@@ -50,18 +56,21 @@
         </ComboBox>
         
         <NumberBox x:Name="IntervalInput" 
-                   Header="Intervalo" 
+                   Header="Intervalo *" 
                    Value="1" 
                    SpinButtonPlacementMode="Compact" 
-                   Minimum="1" />
+                   Minimum="1"
+                   ToolTipService.ToolTip="De quanto em quanto tempo o ciclo se repete (ex: a cada 2 meses)." />
                    
         <DatePicker x:Name="DateInput" 
-                    Header="Data de Início" 
-                    HorizontalAlignment="Stretch" />
+                    Header="Data de Início *" 
+                    HorizontalAlignment="Stretch"
+                    ToolTipService.ToolTip="A data da primeira ocorrência da série recorrente." />
                     
         <CheckBox x:Name="AutoConfirmInput" 
                   Content="Auto-Confirmar (Efetivar automaticamente)" 
                   IsChecked="True" 
-                  Margin="0,8,0,0" />
+                  Margin="0,8,0,0"
+                  ToolTipService.ToolTip="Se ativado, cada ocorrência gerará automaticamente uma transação confirmada. Caso contrário, ela será criada como 'planejada'." />
     </StackPanel>
 </ContentDialog>

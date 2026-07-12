@@ -18,6 +18,9 @@ public sealed class InvestmentConfiguration : IEntityTypeConfiguration<Investmen
         builder.Property(x => x.CurrentPrice).HasPrecision(19, 4);
         builder.Property(x => x.CurrencyCode).HasMaxLength(3).IsFixedLength().IsRequired();
         builder.Property(x => x.RiskLevel).HasMaxLength(20).IsRequired();
+        builder.Property(x => x.IndexerType).HasMaxLength(20);
+        builder.Property(x => x.IndexerRate).HasPrecision(19, 4);
+        builder.Property(x => x.IndexerAdditionalRate).HasPrecision(19, 4);
         builder.Property(x => x.LockVersion).IsConcurrencyToken();
     }
 }

@@ -18,13 +18,17 @@ public sealed class Investment : BaseEntity
     public bool IsActive { get; private set; } = true;
     public bool ProjectionEnabled { get; private set; } = true;
 
+    public string? IndexerType { get; private set; }
+    public decimal? IndexerRate { get; private set; }
+    public decimal? IndexerAdditionalRate { get; private set; }
+
     public decimal TotalInvested => Quantity * AveragePrice;
     public decimal CurrentValue => Quantity * CurrentPrice;
     public decimal GainLossPercent => TotalInvested == 0 ? 0 : Math.Round((CurrentValue - TotalInvested) / TotalInvested * 100, 2);
 
     private Investment() { }
 
-    public Investment(Guid userId, Guid walletId, string name, string? ticker, string assetType, decimal quantity, decimal averagePrice, decimal currentPrice, string currencyCode, string riskLevel)
+    public Investment(Guid userId, Guid walletId, string name, string? ticker, string assetType, decimal quantity, decimal averagePrice, decimal currentPrice, string currencyCode, string riskLevel, string? indexerType = null, decimal? indexerRate = null, decimal? indexerAdditionalRate = null)
     {
         UserId = userId;
         WalletId = walletId;
@@ -36,9 +40,12 @@ public sealed class Investment : BaseEntity
         CurrentPrice = currentPrice;
         CurrencyCode = currencyCode;
         RiskLevel = riskLevel;
+        IndexerType = indexerType;
+        IndexerRate = indexerRate;
+        IndexerAdditionalRate = indexerAdditionalRate;
     }
 
-    public void Update(string name, string? ticker, string assetType, decimal quantity, decimal averagePrice, decimal currentPrice, string riskLevel, bool isActive)
+    public void Update(string name, string? ticker, string assetType, decimal quantity, decimal averagePrice, decimal currentPrice, string riskLevel, bool isActive, string? indexerType = null, decimal? indexerRate = null, decimal? indexerAdditionalRate = null)
     {
         Name = name;
         Ticker = ticker;
@@ -48,6 +55,9 @@ public sealed class Investment : BaseEntity
         CurrentPrice = currentPrice;
         RiskLevel = riskLevel;
         IsActive = isActive;
+        IndexerType = indexerType;
+        IndexerRate = indexerRate;
+        IndexerAdditionalRate = indexerAdditionalRate;
         Touch();
     }
 

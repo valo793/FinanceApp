@@ -11,11 +11,18 @@ namespace FinanceApp.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/investments")]
-public sealed class InvestmentsController(IInvestmentService investmentService, ICurrentUserContext currentUser, IAuditService auditService) : ControllerBase
+public sealed class InvestmentsController(IInvestmentService investmentService, ICurrentUserContext currentUser, IAuditService auditService, IAssetPriceService priceService) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] Guid? walletId, CancellationToken cancellationToken) =>
         Ok(await investmentService.ListAsync(currentUser.UserId, walletId, cancellationToken));
+
+    [HttpGet("validate")]
+    public async Task<IActionResult> Validate([FromQuery] string ticker, CancellationToken cancellationToken)
+    {
+        var result = await priceService.ValidateTickerAsync(ticker, cancellationToken);
+        return result != null ? Ok(result) : NotFound();
+    }
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id, CancellationToken cancellationToken) =>

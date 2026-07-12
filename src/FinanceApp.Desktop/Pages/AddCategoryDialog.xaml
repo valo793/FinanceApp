@@ -11,12 +11,14 @@
 
     <StackPanel Spacing="16" Width="300" Margin="0,10,0,0">
         <TextBox x:Name="NameInput" 
-                 Header="Nome da Categoria" 
-                 PlaceholderText="Ex: Alimentação, Transporte" />
+                 Header="Nome da Categoria *" 
+                 PlaceholderText="Ex: Alimentação, Transporte"
+                 ToolTipService.ToolTip="Nome de identificação amigável para classificar seus lançamentos." />
                  
-        <TextBlock Text="Cor da Categoria" 
+        <TextBlock Text="Cor da Categoria *" 
                    Style="{StaticResource BodyTextBlockStyle}" 
-                   Foreground="{StaticResource TextSecondaryBrush}" />
+                   Foreground="{StaticResource TextSecondaryBrush}"
+                   ToolTipService.ToolTip="Cor utilizada nos gráficos do Dashboard para diferenciar esta categoria." />
         <ColorPicker x:Name="ColorPickerInput" 
                      IsAlphaEnabled="False"
                      IsAlphaSliderVisible="False"
@@ -27,15 +29,17 @@
                      Height="200" />
                  
         <TextBox x:Name="IconInput" 
-                 Header="Ícone (Nome do Símbolo)" 
-                 PlaceholderText="Ex: Shop, Folder" />
+                 Header="Ícone (Nome do Símbolo - opcional)" 
+                 PlaceholderText="Ex: Shop, Folder"
+                 ToolTipService.ToolTip="Insira o nome de um símbolo do Windows para o ícone (ex: Shop, Folder, Heart, Home)." />
 
         <StackPanel x:Name="BudgetPanel" Spacing="8" Visibility="Collapsed">
             <NumberBox x:Name="BudgetLimitInput"
-                       Header="Limite de Orçamento Mensal (Opcional)"
+                       Header="Limite de Orçamento Mensal (opcional)"
                        PlaceholderText="Ex: 500.00"
                        AcceptsExpression="True"
-                       SpinButtonPlacementMode="Compact" />
+                       SpinButtonPlacementMode="Compact"
+                       ToolTipService.ToolTip="Define o teto de gastos mensais para esta categoria, exibindo um progresso visual no Dashboard." />
         </StackPanel>
     </StackPanel>
 </ContentDialog>

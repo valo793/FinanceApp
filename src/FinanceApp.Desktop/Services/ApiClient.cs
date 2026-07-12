@@ -351,6 +351,14 @@ public sealed class ApiClient
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<TickerValidationResultDto?> ValidateTickerAsync(string ticker, CancellationToken cancellationToken = default)
+    {
+        var response = await SendWithRefreshAsync(() =>
+            new HttpRequestMessage(HttpMethod.Get, $"api/v1/investments/validate?ticker={Uri.EscapeDataString(ticker)}"), cancellationToken);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<TickerValidationResultDto>(cancellationToken: cancellationToken);
+    }
+
     public async Task SyncInvestmentsAsync(CancellationToken cancellationToken = default)
     {
         var response = await SendWithRefreshAsync(() =>

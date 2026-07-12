@@ -15,6 +15,9 @@ public sealed class InvestmentDto
     public string CurrencyCode { get; init; } = "BRL";
     public string RiskLevel { get; init; } = "moderate";
     public bool IsActive { get; init; }
+    public string? IndexerType { get; init; }
+    public decimal? IndexerRate { get; init; }
+    public decimal? IndexerAdditionalRate { get; init; }
     public decimal TotalInvested { get; init; }
     public decimal CurrentValue { get; init; }
     public decimal GainLossPercent { get; init; }
@@ -32,6 +35,9 @@ public sealed class CreateInvestmentRequest
     public decimal CurrentPrice { get; init; }
     public string CurrencyCode { get; init; } = "BRL";
     public string RiskLevel { get; init; } = "moderate";
+    public string? IndexerType { get; init; }
+    public decimal? IndexerRate { get; init; }
+    public decimal? IndexerAdditionalRate { get; init; }
 }
 
 public sealed class UpdateInvestmentRequest
@@ -44,6 +50,9 @@ public sealed class UpdateInvestmentRequest
     public decimal CurrentPrice { get; init; }
     public string RiskLevel { get; init; } = "moderate";
     public bool IsActive { get; init; } = true;
+    public string? IndexerType { get; init; }
+    public decimal? IndexerRate { get; init; }
+    public decimal? IndexerAdditionalRate { get; init; }
     public required long LockVersion { get; init; }
 }
 

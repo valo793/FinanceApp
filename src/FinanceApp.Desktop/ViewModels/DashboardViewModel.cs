@@ -36,7 +36,7 @@ public partial class DashboardViewModel(ApiClient apiClient, CacheService cacheS
     public string NetResultText => HideValues ? "Resultado: R$ •••••" : (Overview is null ? "Resultado líquido: R$ 0,00" : $"Resultado líquido: R$ {Overview.NetResult:N2}");
     public string PendingRecurrencesText => Overview is null ? "0 pendentes" : $"{Overview.PendingRecurrences} pendentes";
 
-    public string VisibilityIcon => HideValues ? "👁️" : "🙈";
+    public string VisibilityGlyph => HideValues ? "\uE7B3" : "\uE890";
 
     [RelayCommand]
     public void ToggleValuesVisibility()
@@ -52,7 +52,7 @@ public partial class DashboardViewModel(ApiClient apiClient, CacheService cacheS
         OnPropertyChanged(nameof(MonthIncomeText));
         OnPropertyChanged(nameof(MonthExpensesText));
         OnPropertyChanged(nameof(NetResultText));
-        OnPropertyChanged(nameof(VisibilityIcon));
+        OnPropertyChanged(nameof(VisibilityGlyph));
         OnPropertyChanged(nameof(NetWorthPoints));
         OnPropertyChanged(nameof(CashflowPoints));
         OnPropertyChanged(nameof(ExpenseByCategoryPoints));

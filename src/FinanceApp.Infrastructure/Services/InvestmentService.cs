@@ -35,7 +35,8 @@ public sealed class InvestmentService(FinanceDbContext dbContext, IAssetPriceSer
     public async Task<InvestmentDto> CreateAsync(Guid userId, CreateInvestmentRequest request, CancellationToken cancellationToken)
     {
         var entity = new Investment(userId, request.WalletId, request.Name, request.Ticker, request.AssetType,
-            request.Quantity, request.AveragePrice, request.CurrentPrice, request.CurrencyCode, request.RiskLevel);
+            request.Quantity, request.AveragePrice, request.CurrentPrice, request.CurrencyCode, request.RiskLevel,
+            request.IndexerType, request.IndexerRate, request.IndexerAdditionalRate);
         dbContext.Investments.Add(entity);
         await dbContext.SaveChangesAsync(cancellationToken);
         return Map(entity);
@@ -45,7 +46,8 @@ public sealed class InvestmentService(FinanceDbContext dbContext, IAssetPriceSer
     {
         var entity = await dbContext.Investments.FirstOrDefaultAsync(x => x.UserId == userId && x.Id == id, cancellationToken)
             ?? throw new KeyNotFoundException("Investimento não encontrado.");
-        entity.Update(request.Name, request.Ticker, request.AssetType, request.Quantity, request.AveragePrice, request.CurrentPrice, request.RiskLevel, request.IsActive);
+        entity.Update(request.Name, request.Ticker, request.AssetType, request.Quantity, request.AveragePrice, request.CurrentPrice, request.RiskLevel, request.IsActive,
+            request.IndexerType, request.IndexerRate, request.IndexerAdditionalRate);
         await dbContext.SaveChangesAsync(cancellationToken);
         return Map(entity);
     }
@@ -139,6 +141,9 @@ public sealed class InvestmentService(FinanceDbContext dbContext, IAssetPriceSer
         CurrencyCode = x.CurrencyCode,
         RiskLevel = x.RiskLevel,
         IsActive = x.IsActive,
+        IndexerType = x.IndexerType,
+        IndexerRate = x.IndexerRate,
+        IndexerAdditionalRate = x.IndexerAdditionalRate,
         TotalInvested = x.TotalInvested,
         CurrentValue = x.CurrentValue,
         GainLossPercent = x.GainLossPercent,

@@ -42,7 +42,10 @@ public sealed partial class InvestmentsPage : Page
                 AveragePrice = dialog.AveragePrice,
                 CurrentPrice = dialog.CurrentPrice,
                 RiskLevel = dialog.RiskLevel,
-                CurrencyCode = "BRL"
+                CurrencyCode = "BRL",
+                IndexerType = dialog.IndexerType,
+                IndexerRate = dialog.IndexerRate,
+                IndexerAdditionalRate = dialog.IndexerAdditionalRate
             };
 
             await ViewModel.CreateInvestmentCommand.ExecuteAsync(request);
@@ -76,6 +79,9 @@ public sealed partial class InvestmentsPage : Page
                     CurrentPrice = dialog.CurrentPrice,
                     RiskLevel = dialog.RiskLevel,
                     IsActive = existing.IsActive,
+                    IndexerType = dialog.IndexerType,
+                    IndexerRate = dialog.IndexerRate,
+                    IndexerAdditionalRate = dialog.IndexerAdditionalRate,
                     LockVersion = existing.LockVersion
                 };
 

@@ -11,6 +11,7 @@
 
             <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
             <converters:HexToBrushConverter x:Key="HexToBrushConverter" />
+            <converters:AssetTypeConverter x:Key="AssetTypeConverter" />
 
             <Color x:Key="BgPrimary">#0B1020</Color>
             <Color x:Key="BgSurface">#12192B</Color>

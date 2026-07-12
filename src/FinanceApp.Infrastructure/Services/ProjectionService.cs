@@ -36,6 +36,12 @@ public sealed class ProjectionService(FinanceDbContext dbContext) : IProjectionS
             .Where(x => x.UserId == userId && x.IsActive && !x.IsPaused)
             .ToListAsync(cancellationToken);
 
+        // 3.5 Load all active investments
+        var activeInvestments = await dbContext.Investments
+            .Where(x => x.UserId == userId && x.IsActive)
+            .ToListAsync(cancellationToken);
+        var currentInvestmentValues = activeInvestments.ToDictionary(x => x.Id, x => x.CurrentValue);
+
         // 4. Create a list to collect all future cash flows
         var cashFlows = new List<(DateOnly Date, decimal SignedAmount)>();
 
@@ -98,12 +104,46 @@ public sealed class ProjectionService(FinanceDbContext dbContext) : IProjectionS
                 else expense = Math.Abs(signedSum);
             }
 
+            decimal dailyInvestmentsSum = 0;
+            foreach (var inv in activeInvestments)
+            {
+                var val = currentInvestmentValues[inv.Id];
+                if (currentDate > today)
+                {
+                    if (inv.IndexerType != null)
+                    {
+                        double annualRate = 0.0;
+                        if (inv.IndexerType == "cdi")
+                        {
+                            var ratePercent = inv.IndexerRate ?? 100m;
+                            annualRate = 0.105 * (double)(ratePercent / 100m);
+                        }
+                        else if (inv.IndexerType == "ipca")
+                        {
+                            var addRate = inv.IndexerAdditionalRate ?? 0m;
+                            annualRate = 0.045 + (double)(addRate / 100m);
+                        }
+                        else if (inv.IndexerType == "pre")
+                        {
+                            var ratePercent = inv.IndexerRate ?? 0m;
+                            annualRate = (double)(ratePercent / 100m);
+                        }
+
+                        var dailyFactor = Math.Pow(1.0 + annualRate, 1.0 / 365.0);
+                        val = val * (decimal)dailyFactor;
+                        currentInvestmentValues[inv.Id] = val;
+                    }
+                }
+                dailyInvestmentsSum += val;
+            }
+
             points.Add(new ProjectionPointDto
             {
                 Date = currentDate,
                 ProjectedBalance = currentBalance,
                 ProjectedIncome = income,
-                ProjectedExpense = expense
+                ProjectedExpense = expense,
+                ProjectedInvestments = dailyInvestmentsSum
             });
 
             currentDate = currentDate.AddDays(1);

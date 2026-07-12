@@ -11,13 +11,15 @@
 
     <StackPanel Spacing="16" Width="320" Margin="0,10,0,0">
         <TextBox x:Name="NameInput" 
-                 Header="Nome da Conta" 
-                 PlaceholderText="Ex: Banco do Brasil" />
+                 Header="Nome da Conta *" 
+                 PlaceholderText="Ex: Banco do Brasil"
+                 ToolTipService.ToolTip="Nome amigável de identificação da conta (ex: Itaú Principal, Carteira de Dinheiro)." />
                  
         <ComboBox x:Name="TypeInput" 
-                  Header="Tipo" 
+                  Header="Tipo *" 
                   HorizontalAlignment="Stretch" 
-                  SelectedIndex="0">
+                  SelectedIndex="0"
+                  ToolTipService.ToolTip="Classificação da conta para exibição em relatórios e divisão de saldo.">
             <ComboBoxItem Content="Conta Corrente" Tag="checking" />
             <ComboBoxItem Content="Poupança" Tag="savings" />
             <ComboBoxItem Content="Cartão de Crédito" Tag="credit_card" />
@@ -26,17 +28,20 @@
         </ComboBox>
         
         <NumberBox x:Name="BalanceInput" 
-                   Header="Saldo Inicial (R$)" 
+                   Header="Saldo Inicial (R$) *" 
                    Value="0" 
-                   SpinButtonPlacementMode="Compact" />
+                   SpinButtonPlacementMode="Compact"
+                   ToolTipService.ToolTip="Saldo atual presente na conta física. Cartões de crédito aceitam valores negativos para indicar limite utilizado." />
                    
         <TextBox x:Name="CurrencyInput" 
-                 Header="Moeda" 
-                 Text="BRL" />
+                 Header="Moeda (opcional)" 
+                 Text="BRL"
+                 ToolTipService.ToolTip="Moeda base de operação da conta (ex: BRL, USD)." />
                  
         <CheckBox x:Name="NetWorthInput" 
                   Content="Incluir no Patrimônio Líquido" 
                   IsChecked="True" 
-                  Margin="0,8,0,0" />
+                  Margin="0,8,0,0"
+                  ToolTipService.ToolTip="Se desmarcado, o saldo desta conta não entrará na soma de patrimônio líquido geral do Dashboard." />
     </StackPanel>
 </ContentDialog>
