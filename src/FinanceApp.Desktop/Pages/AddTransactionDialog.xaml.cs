@@ -8,7 +8,12 @@ namespace FinanceApp.Desktop.Pages;
 
 public sealed partial class AddTransactionDialog : ContentDialog
 {
-    public AddTransactionDialog(IReadOnlyCollection<AccountDto> accounts, IReadOnlyCollection<CategoryDto> categories, string transactionType)
+    public AddTransactionDialog(
+        IReadOnlyCollection<AccountDto> accounts,
+        IReadOnlyCollection<CategoryDto> categories,
+        IReadOnlyCollection<FinanceApp.Contracts.Investments.InvestmentDto> investments,
+        string transactionType,
+        Guid? preSelectedInvestmentId = null)
     {
         InitializeComponent();
         AccountInput.ItemsSource = accounts;
@@ -22,8 +27,50 @@ public sealed partial class AddTransactionDialog : ContentDialog
         {
             CategoryInput.SelectedIndex = 0;
         }
-        CategoryInput.Header = transactionType == "expense" ? "Categoria de Despesa" : "Fonte de Receita";
 
+        InvestmentInput.ItemsSource = investments;
+        if (investments != null && investments.Count > 0)
+        {
+            if (preSelectedInvestmentId.HasValue)
+            {
+                InvestmentInput.SelectedValue = preSelectedInvestmentId.Value;
+            }
+            else
+            {
+                InvestmentInput.SelectedIndex = 0;
+            }
+        }
+
+        var isInvestment = transactionType == "investment_buy" ||
+                           transactionType == "investment_sell" ||
+                           transactionType == "investment_yield";
+
+        if (isInvestment)
+        {
+            CategoryInput.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+            IsFixedInput.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+            InvestmentFields.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+
+            if (transactionType == "investment_buy" || transactionType == "investment_sell")
+            {
+                BuySellFields.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+                AmountInput.IsEnabled = false;
+            }
+            else
+            {
+                BuySellFields.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+                AmountInput.IsEnabled = true;
+            }
+        }
+        else
+        {
+            CategoryInput.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+            IsFixedInput.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+            InvestmentFields.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+            AmountInput.IsEnabled = true;
+        }
+
+        CategoryInput.Header = transactionType == "expense" ? "Categoria de Despesa" : "Fonte de Receita";
         DateInput.Date = DateTimeOffset.Now;
     }
 
@@ -32,6 +79,9 @@ public sealed partial class AddTransactionDialog : ContentDialog
     public DateOnly CompetenceDate => DateOnly.FromDateTime(DateInput.Date.DateTime);
     public Guid? AccountId => AccountInput.SelectedValue as Guid?;
     public Guid? CategoryId => CategoryInput.SelectedValue as Guid?;
+    public Guid? InvestmentId => InvestmentInput.SelectedValue as Guid?;
+    public decimal? InvestmentQuantity => BuySellFields.Visibility == Microsoft.UI.Xaml.Visibility.Visible ? (decimal?)QuantityInput.Value : null;
+    public decimal? UnitPrice => BuySellFields.Visibility == Microsoft.UI.Xaml.Visibility.Visible ? (decimal?)UnitPriceInput.Value : null;
     public bool IsFixed => IsFixedInput.IsChecked ?? false;
 
     public string Frequency => (FrequencyInput.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "monthly";
@@ -51,6 +101,16 @@ public sealed partial class AddTransactionDialog : ContentDialog
         if (RecurrenceFields != null)
         {
             RecurrenceFields.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+        }
+    }
+
+    private void OnBuySellFieldsChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
+    {
+        if (QuantityInput != null && UnitPriceInput != null && AmountInput != null)
+        {
+            var qty = double.IsNaN(QuantityInput.Value) ? 0.0 : QuantityInput.Value;
+            var price = double.IsNaN(UnitPriceInput.Value) ? 0.0 : UnitPriceInput.Value;
+            AmountInput.Value = qty * price;
         }
     }
 }

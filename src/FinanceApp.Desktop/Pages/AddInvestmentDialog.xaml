@@ -9,19 +9,21 @@
     RequestedTheme="Dark">
 
     <StackPanel Spacing="16" Width="360">
-        <Grid ColumnSpacing="8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBox x:Name="TickerInput" Grid.Column="0" Header="Ticker (opcional)" PlaceholderText="Ex: PETR4.SA" LostFocus="TickerInput_LostFocus"
-                     ToolTipService.ToolTip="Ticker do ativo (ex: PETR4.SA, MXRF11.SA). Se preenchido, os dados de preço e nome serão atualizados automaticamente via Yahoo Finance." />
-            <Button x:Name="ValidateTickerButton" Grid.Column="1" Content="Validar" VerticalAlignment="Bottom" Click="ValidateTickerButton_Click"
-                    ToolTipService.ToolTip="Valida o ticker digitado na API do Yahoo Finance e autocompleta as informações do ativo." />
-        </Grid>
-        
-        <ProgressRing x:Name="ValidationProgress" IsActive="False" HorizontalAlignment="Left" Width="20" Height="20" Visibility="Collapsed" />
-        <TextBlock x:Name="ValidationStatusText" FontSize="12" Foreground="Red" Visibility="Collapsed" />
+        <StackPanel x:Name="TickerPanel" Spacing="8">
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="TickerInput" Grid.Column="0" Header="Ticker (opcional)" PlaceholderText="Ex: PETR4.SA" LostFocus="TickerInput_LostFocus"
+                         ToolTipService.ToolTip="Ticker do ativo (ex: PETR4.SA, MXRF11.SA). Se preenchido, os dados de preço e nome serão atualizados automaticamente via Yahoo Finance." />
+                <Button x:Name="ValidateTickerButton" Grid.Column="1" Content="Validar" VerticalAlignment="Bottom" Click="ValidateTickerButton_Click"
+                        ToolTipService.ToolTip="Valida o ticker digitado na API do Yahoo Finance e autocompleta as informações do ativo." />
+            </Grid>
+            
+            <ProgressRing x:Name="ValidationProgress" IsActive="False" HorizontalAlignment="Left" Width="20" Height="20" Visibility="Collapsed" />
+            <TextBlock x:Name="ValidationStatusText" FontSize="12" Foreground="Red" Visibility="Collapsed" />
+        </StackPanel>
 
         <TextBox x:Name="NameInput" Header="Nome do Ativo *" PlaceholderText="Ex: Ações Petrobras, CDB Banco Inter"
                  ToolTipService.ToolTip="Nome amigável de exibição do ativo na sua carteira de investimentos." />
@@ -66,6 +68,9 @@
 
         <NumberBox x:Name="CurrentPriceInput" Header="Preço Atual (R$) *" Value="0.00" SmallChange="0.1" LargeChange="1.0"
                    ToolTipService.ToolTip="Cotação atual do ativo. Para ativos com ticker, este valor é atualizado automaticamente a cada 4 horas." />
+
+        <CheckBox x:Name="IsWatchlistInput" Content="Adicionar à Watchlist (Acompanhamento)" Margin="0,4,0,4"
+                  ToolTipService.ToolTip="Se marcado, este ativo servirá apenas para monitoramento e não fará parte dos cálculos gerais de saldo e rentabilidade de sua carteira." />
 
         <ComboBox x:Name="RiskLevelInput" Header="Nível de Risco *" HorizontalAlignment="Stretch" SelectedIndex="1"
                   ToolTipService.ToolTip="Selecione o nível de risco associado para análise de perfil de carteira.">

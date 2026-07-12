@@ -18,10 +18,13 @@ public sealed class InvestmentDto
     public string? IndexerType { get; init; }
     public decimal? IndexerRate { get; init; }
     public decimal? IndexerAdditionalRate { get; init; }
+    public bool IsWatchlist { get; init; }
     public decimal TotalInvested { get; init; }
     public decimal CurrentValue { get; init; }
     public decimal GainLossPercent { get; init; }
     public long LockVersion { get; init; }
+    public decimal AccumulatedYield { get; init; }
+    public decimal TotalReturn { get; init; }
 }
 
 public sealed class CreateInvestmentRequest
@@ -38,6 +41,7 @@ public sealed class CreateInvestmentRequest
     public string? IndexerType { get; init; }
     public decimal? IndexerRate { get; init; }
     public decimal? IndexerAdditionalRate { get; init; }
+    public bool IsWatchlist { get; init; }
 }
 
 public sealed class UpdateInvestmentRequest
@@ -53,6 +57,7 @@ public sealed class UpdateInvestmentRequest
     public string? IndexerType { get; init; }
     public decimal? IndexerRate { get; init; }
     public decimal? IndexerAdditionalRate { get; init; }
+    public bool IsWatchlist { get; init; }
     public required long LockVersion { get; init; }
 }
 
@@ -62,10 +67,22 @@ public sealed class PortfolioSummaryDto
     public decimal CurrentValue { get; init; }
     public decimal GainLossPercent { get; init; }
     public int ActiveCount { get; init; }
+    public decimal TotalYield { get; init; }
+    public decimal TotalReturn { get; init; }
 }
 
 public sealed class InvestmentHistoryPointDto
 {
     public DateOnly Date { get; init; }
     public decimal Value { get; init; }
+}
+
+public sealed class CandlestickPointDto
+{
+    public required DateOnly Date { get; init; }
+    public required decimal Open { get; init; }
+    public required decimal High { get; init; }
+    public required decimal Low { get; init; }
+    public required decimal Close { get; init; }
+    public required long Volume { get; init; }
 }

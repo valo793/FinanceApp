@@ -62,10 +62,14 @@
             <ProgressBar IsIndeterminate="True"
                          Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay}"
                          Background="Transparent"
-                         Foreground="{StaticResource AccentCyanBrush}" />
+                         Foreground="{StaticResource AccentCyanBrush}" />            <!-- Tab Pivot Control -->
+            <Pivot x:Name="PortfolioPivot" SelectionChanged="PortfolioPivot_SelectionChanged" Margin="0,0,0,0">
+                <PivotItem Header="Carteira Real" />
+                <PivotItem Header="Watchlist (Acompanhamento)" />
+            </Pivot>
 
             <!-- KPI Cards Section -->
-            <Grid ColumnSpacing="16">
+            <Grid ColumnSpacing="16" Visibility="{x:Bind ViewModel.IsWatchlistMode, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
@@ -100,83 +104,73 @@
             <!-- Evolution Chart Section -->
             <Border Padding="20" CornerRadius="16" Background="{StaticResource BgSurfaceBrush}">
                 <StackPanel Spacing="12">
-                    <TextBlock Text="Evolução do Patrimônio Investido" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" />
-                    <controls:LineChart ItemsSource="{x:Bind ViewModel.HistoryPoints, Mode=OneWay}" Height="220" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBlock Grid.Column="0" Text="{x:Bind ViewModel.ChartTitle, Mode=OneWay}" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                        
+                        <!-- Interactive Filters -->
+                        <ComboBox Grid.Column="1" 
+                                  Header="Categoria"
+                                  ItemsSource="{x:Bind ViewModel.Categories}" 
+                                  SelectedItem="{x:Bind ViewModel.SelectedCategory, Mode=TwoWay}"
+                                  Width="140"
+                                  Margin="0,0,12,0"
+                                  VerticalAlignment="Center"/>
+
+                        <ComboBox Grid.Column="2" 
+                                  Header="Ativo"
+                                  ItemsSource="{x:Bind ViewModel.FilterInvestments}" 
+                                  SelectedItem="{x:Bind ViewModel.SelectedFilterInvestment, Mode=TwoWay}"
+                                  DisplayMemberPath="Name"
+                                  Width="180"
+                                  Margin="0,0,12,0"
+                                  VerticalAlignment="Center"/>
+
+                        <Button Grid.Column="3" 
+                                Content="Limpar Seleção" 
+                                Visibility="{x:Bind ViewModel.ShowCandlestickChart, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                Click="ClearSelection_Click"
+                                Background="Transparent"
+                                BorderBrush="{StaticResource BorderSubtleBrush}"
+                                BorderThickness="1"
+                                Foreground="{StaticResource TextSecondaryBrush}"
+                                Padding="8,4"
+                                CornerRadius="4"
+                                FontSize="12"
+                                VerticalAlignment="Bottom"/>
+                    </Grid>
+                    
+                    <controls:LineChart ItemsSource="{x:Bind ViewModel.HistoryPoints, Mode=OneWay}" 
+                                        Visibility="{x:Bind ViewModel.ShowCandlestickChart, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}" 
+                                        Height="220" />
+
+                    <controls:CandlestickChart ItemsSource="{x:Bind ViewModel.CandlestickPoints, Mode=OneWay}" 
+                                              Visibility="{x:Bind ViewModel.ShowCandlestickChart, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" 
+                                              Height="220" />
                 </StackPanel>
             </Border>
 
-            <!-- Assets List -->
+            <!-- Bento Grid of Assets -->
             <Border Padding="20" CornerRadius="16" Background="{StaticResource BgSurfaceBrush}">
                 <StackPanel Spacing="16">
                     <TextBlock Text="Meus Ativos" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" />
 
-                    <ListView ItemsSource="{x:Bind ViewModel.Investments, Mode=OneWay}"
+                    <GridView ItemsSource="{x:Bind ViewModel.Investments, Mode=OneWay}"
                               SelectionMode="None"
-                              IsItemClickEnabled="False">
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="ListViewItem">
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                <Setter Property="Padding" Value="12,8" />
-                                <Setter Property="Margin" Value="0,0,0,8" />
-                                <Setter Property="Background" Value="{StaticResource BgElevatedBrush}" />
-                                <Setter Property="CornerRadius" Value="8" />
-                            </Style>
-                        </ListView.ItemContainerStyle>
-                        <ListView.ItemTemplate>
+                              Padding="0"
+                              HorizontalAlignment="Stretch">
+                        <GridView.ItemTemplate>
                             <DataTemplate x:DataType="inv:InvestmentDto">
-                                <Grid ColumnSpacing="16">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="2*" />
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-
-                                    <!-- Asset Name & Ticker -->
-                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                        <TextBlock Text="{x:Bind Name}" FontWeight="SemiBold" FontSize="15" Foreground="{StaticResource TextPrimaryBrush}" />
-                                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
-                                            <TextBlock Text="{x:Bind Ticker}" FontSize="12" Foreground="{StaticResource AccentCyanBrush}" Visibility="{x:Bind Ticker, Converter={StaticResource StringToVisibilityConverter}, FallbackValue=Collapsed}" d:Visibility="Visible" />
-                                            <TextBlock Text="{x:Bind AssetType, Converter={StaticResource AssetTypeConverter}}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Opacity="0.8" />
-                                        </StackPanel>
-                                    </StackPanel>
-
-                                    <!-- Position Info -->
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" Width="80">
-                                        <TextBlock Text="Quantidade" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Right" />
-                                        <TextBlock Text="{x:Bind Quantity}" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Right" Margin="0,2,0,0" />
-                                    </StackPanel>
-
-                                    <!-- Average Price / Current Price -->
-                                    <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Width="140">
-                                        <TextBlock Text="Preço Médio / Atual" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Right" />
-                                        <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" Margin="0,2,0,0">
-                                            <TextBlock Text="{x:Bind AveragePrice}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" />
-                                            <TextBlock Text="/" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" />
-                                            <TextBlock Text="{x:Bind CurrentPrice}" FontSize="12" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" />
-                                        </StackPanel>
-                                    </StackPanel>
-
-                                    <!-- Total Invested & Current Value -->
-                                    <StackPanel Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Right" Width="100">
-                                        <TextBlock Text="Valor Atual" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Right" />
-                                        <TextBlock Text="{x:Bind CurrentValue}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Right" Margin="0,2,0,0" />
-                                    </StackPanel>
-
-                                    <!-- Actions (Edit/Delete) -->
-                                    <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="12,0,0,0">
-                                        <Button Click="EditInvestment_Click" Tag="{x:Bind}" Background="Transparent" BorderThickness="0" Padding="4">
-                                            <SymbolIcon Symbol="Edit" Foreground="{StaticResource TextSecondaryBrush}" />
-                                        </Button>
-                                        <Button Click="DeleteInvestment_Click" Tag="{x:Bind Id}" Background="Transparent" BorderThickness="0" Padding="4">
-                                            <SymbolIcon Symbol="Delete" Foreground="{StaticResource AccentVioletBrush}" />
-                                        </Button>
-                                    </StackPanel>
-                                </Grid>
+                                <controls:AssetBentoCard Investment="{x:Bind}" />
                             </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
+                        </GridView.ItemTemplate>
+                    </GridView>
                 </StackPanel>
             </Border>
 

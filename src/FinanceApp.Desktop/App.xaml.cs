@@ -15,10 +15,8 @@ public partial class App : Application
             services.AddSingleton<Services.InfoBarService>();
             services.AddSingleton<ViewModels.LoginViewModel>();
             services.AddSingleton<ViewModels.DashboardViewModel>();
-            services.AddSingleton<ViewModels.ExpensesViewModel>();
-            services.AddSingleton<ViewModels.IncomesViewModel>();
+            services.AddSingleton<ViewModels.TransactionsViewModel>();
             services.AddSingleton<ViewModels.AccountsViewModel>();
-            services.AddSingleton<ViewModels.CategoriesViewModel>();
             services.AddSingleton<ViewModels.RecurringViewModel>();
             services.AddSingleton<ViewModels.InvestmentsViewModel>();
             services.AddSingleton<ViewModels.SettingsViewModel>();

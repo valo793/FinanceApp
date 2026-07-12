@@ -11,6 +11,7 @@ public sealed class Transaction : SoftDeletableEntity
     public Guid? AccountId { get; private set; }
     public Guid? DestinationAccountId { get; private set; }
     public Guid? WalletId { get; private set; }
+    public Guid? InvestmentId { get; private set; }
     public Guid? IncomeCategoryId { get; private set; }
     public Guid? ExpenseCategoryId { get; private set; }
     public Guid? RecurringTransactionId { get; private set; }
@@ -25,6 +26,8 @@ public sealed class Transaction : SoftDeletableEntity
     public string CurrencyCode { get; private set; } = "BRL";
     public bool IsFixed { get; private set; }
     public string OriginType { get; private set; } = "manual";
+    public decimal? InvestmentQuantity { get; private set; }
+    public decimal? UnitPrice { get; private set; }
 
     private Transaction() { }
 
@@ -45,7 +48,10 @@ public sealed class Transaction : SoftDeletableEntity
         DateTimeOffset? paidAt = null,
         bool isFixed = false,
         Guid? recurringTransactionId = null,
-        string originType = "manual")
+        string originType = "manual",
+        Guid? investmentId = null,
+        decimal? investmentQuantity = null,
+        decimal? unitPrice = null)
     {
         if (amountExpected is null && amountActual is null)
             throw new InvalidOperationException("A transaction requires amountExpected or amountActual.");
@@ -70,6 +76,10 @@ public sealed class Transaction : SoftDeletableEntity
         IsFixed = isFixed;
         RecurringTransactionId = recurringTransactionId;
         OriginType = originType;
+        InvestmentId = investmentId;
+        InvestmentQuantity = investmentQuantity;
+        UnitPrice = unitPrice;
+        ValidateInvestmentFields();
     }
 
     public decimal EffectiveAmount => AmountActual ?? AmountExpected ?? 0m;
@@ -88,7 +98,10 @@ public sealed class Transaction : SoftDeletableEntity
         Guid? expenseCategoryId,
         DateOnly? dueDate,
         DateTimeOffset? paidAt,
-        bool isFixed)
+        bool isFixed,
+        Guid? investmentId = null,
+        decimal? investmentQuantity = null,
+        decimal? unitPrice = null)
     {
         if (amountExpected is null && amountActual is null)
             throw new InvalidOperationException("A transaction requires amountExpected or amountActual.");
@@ -107,6 +120,10 @@ public sealed class Transaction : SoftDeletableEntity
         DueDate = dueDate;
         PaidAt = paidAt;
         IsFixed = isFixed;
+        InvestmentId = investmentId;
+        InvestmentQuantity = investmentQuantity;
+        UnitPrice = unitPrice;
+        ValidateInvestmentFields();
         Touch();
     }
 
@@ -133,5 +150,22 @@ public sealed class Transaction : SoftDeletableEntity
             TransactionTypes.Transfer => 0m,
             _ => amount
         };
+    }
+
+    private void ValidateInvestmentFields()
+    {
+        var isInvestmentType = TransactionType is TransactionTypes.InvestmentBuy
+            or TransactionTypes.InvestmentSell or TransactionTypes.InvestmentYield;
+
+        if (isInvestmentType && InvestmentId is null)
+            throw new InvalidOperationException("Investment transactions require an InvestmentId.");
+
+        if (TransactionType is TransactionTypes.InvestmentBuy or TransactionTypes.InvestmentSell)
+        {
+            if (InvestmentQuantity is null or <= 0)
+                throw new InvalidOperationException("Buy/Sell requires a positive InvestmentQuantity.");
+            if (UnitPrice is null or <= 0)
+                throw new InvalidOperationException("Buy/Sell requires a positive UnitPrice.");
+        }
     }
 }

@@ -11,8 +11,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FinanceApp.Infrastructure.Services;
 
-public sealed class ProjectionService(FinanceDbContext dbContext) : IProjectionService
+public sealed class ProjectionService(FinanceDbContext dbContext, ICustodyService custodyService) : IProjectionService
 {
+    private const double DefaultCdiRate = 0.105;
+    private const double DefaultIpcaRate = 0.045;
     public async Task<IReadOnlyCollection<ProjectionPointDto>> GetProjectionAsync(Guid userId, int months, CancellationToken cancellationToken)
     {
         if (months <= 0) months = 6;
@@ -38,9 +40,16 @@ public sealed class ProjectionService(FinanceDbContext dbContext) : IProjectionS
 
         // 3.5 Load all active investments
         var activeInvestments = await dbContext.Investments
-            .Where(x => x.UserId == userId && x.IsActive)
+            .Where(x => x.UserId == userId && x.IsActive && !x.IsWatchlist)
             .ToListAsync(cancellationToken);
         var currentInvestmentValues = activeInvestments.ToDictionary(x => x.Id, x => x.CurrentValue);
+
+        // Fetch historical returns
+        var historicalReturns = new Dictionary<Guid, decimal?>();
+        foreach (var inv in activeInvestments)
+        {
+            historicalReturns[inv.Id] = await custodyService.GetHistoricalAnnualReturnAsync(userId, inv.Id, cancellationToken);
+        }
 
         // 4. Create a list to collect all future cash flows
         var cashFlows = new List<(DateOnly Date, decimal SignedAmount)>();
@@ -110,25 +119,42 @@ public sealed class ProjectionService(FinanceDbContext dbContext) : IProjectionS
                 var val = currentInvestmentValues[inv.Id];
                 if (currentDate > today)
                 {
-                    if (inv.IndexerType != null)
+                    double annualRate = 0.0;
+                    bool rateFound = false;
+
+                    // 1. Try real historical return first
+                    var histReturn = historicalReturns.GetValueOrDefault(inv.Id);
+                    if (histReturn.HasValue)
                     {
-                        double annualRate = 0.0;
+                        annualRate = (double)histReturn.Value;
+                        rateFound = true;
+                    }
+
+                    // 2. Fall back to indexer calculations if no historical return exists
+                    if (!rateFound && inv.IndexerType != null)
+                    {
                         if (inv.IndexerType == "cdi")
                         {
                             var ratePercent = inv.IndexerRate ?? 100m;
-                            annualRate = 0.105 * (double)(ratePercent / 100m);
+                            annualRate = DefaultCdiRate * (double)(ratePercent / 100m);
+                            rateFound = true;
                         }
                         else if (inv.IndexerType == "ipca")
                         {
                             var addRate = inv.IndexerAdditionalRate ?? 0m;
-                            annualRate = 0.045 + (double)(addRate / 100m);
+                            annualRate = DefaultIpcaRate + (double)(addRate / 100m);
+                            rateFound = true;
                         }
                         else if (inv.IndexerType == "pre")
                         {
                             var ratePercent = inv.IndexerRate ?? 0m;
                             annualRate = (double)(ratePercent / 100m);
+                            rateFound = true;
                         }
+                    }
 
+                    if (rateFound)
+                    {
                         var dailyFactor = Math.Pow(1.0 + annualRate, 1.0 / 365.0);
                         val = val * (decimal)dailyFactor;
                         currentInvestmentValues[inv.Id] = val;

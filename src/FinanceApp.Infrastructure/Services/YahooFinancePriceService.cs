@@ -160,6 +160,74 @@ public sealed class YahooFinancePriceService(HttpClient httpClient) : IAssetPric
         return result;
     }
 
+    public async Task<IReadOnlyCollection<CandlestickPointDto>> GetHistoricalCandlesticksAsync(string ticker, DateOnly from, DateOnly to, CancellationToken cancellationToken)
+    {
+        var result = new List<CandlestickPointDto>();
+        if (string.IsNullOrWhiteSpace(ticker)) return result;
+
+        var fromDateTime = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var toDateTime = new DateTimeOffset(to.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
+
+        var period1 = fromDateTime.ToUnixTimeSeconds();
+        var period2 = toDateTime.ToUnixTimeSeconds();
+
+        var url = $"https://query1.finance2.yahoo.com/v8/finance/chart/{Uri.EscapeDataString(ticker.Trim().ToUpper())}?period1={period1}&period2={period2}&interval=1d";
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+
+            var response = await httpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return result;
+            }
+
+            var data = await response.Content.ReadFromJsonAsync<YahooChartResponse>(cancellationToken: cancellationToken);
+            var chartResult = data?.Chart?.Result?.FirstOrDefault();
+            if (chartResult?.Timestamp != null && chartResult.Indicators?.Quote?.FirstOrDefault() != null)
+            {
+                var quote = chartResult.Indicators.Quote[0];
+                var timestamps = chartResult.Timestamp;
+                var opens = quote.Open;
+                var highs = quote.High;
+                var lows = quote.Low;
+                var closes = quote.Close;
+                var volumes = quote.Volume;
+
+                for (int i = 0; i < timestamps.Count; i++)
+                {
+                    var o = opens != null && opens.Count > i ? opens[i] : null;
+                    var h = highs != null && highs.Count > i ? highs[i] : null;
+                    var l = lows != null && lows.Count > i ? lows[i] : null;
+                    var c = closes != null && closes.Count > i ? closes[i] : null;
+                    var v = volumes != null && volumes.Count > i ? volumes[i] : null;
+
+                    if (o.HasValue && h.HasValue && l.HasValue && c.HasValue)
+                    {
+                        var date = DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeSeconds(timestamps[i]).UtcDateTime);
+                        result.Add(new CandlestickPointDto
+                        {
+                            Date = date,
+                            Open = (decimal)o.Value,
+                            High = (decimal)h.Value,
+                            Low = (decimal)l.Value,
+                            Close = (decimal)c.Value,
+                            Volume = v ?? 0
+                        });
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Fail silently
+        }
+
+        return result;
+    }
+
     private sealed class YahooQuoteResponse
     {
         [JsonPropertyName("quoteResponse")]
@@ -243,7 +311,19 @@ public sealed class YahooFinancePriceService(HttpClient httpClient) : IAssetPric
 
     private sealed class YahooChartQuote
     {
+        [JsonPropertyName("open")]
+        public List<double?>? Open { get; set; }
+
+        [JsonPropertyName("high")]
+        public List<double?>? High { get; set; }
+
+        [JsonPropertyName("low")]
+        public List<double?>? Low { get; set; }
+
         [JsonPropertyName("close")]
         public List<double?>? Close { get; set; }
+
+        [JsonPropertyName("volume")]
+        public List<long?>? Volume { get; set; }
     }
 }

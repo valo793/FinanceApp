@@ -11,4 +11,5 @@ public interface IAssetPriceService
     Task<Dictionary<string, decimal>> GetPricesAsync(IEnumerable<string> tickers, CancellationToken cancellationToken);
     Task<TickerValidationResultDto?> ValidateTickerAsync(string ticker, CancellationToken cancellationToken);
     Task<Dictionary<DateOnly, decimal>> GetHistoricalPricesAsync(string ticker, DateOnly from, DateOnly to, CancellationToken cancellationToken);
+    Task<IReadOnlyCollection<CandlestickPointDto>> GetHistoricalCandlesticksAsync(string ticker, DateOnly from, DateOnly to, CancellationToken cancellationToken);
 }

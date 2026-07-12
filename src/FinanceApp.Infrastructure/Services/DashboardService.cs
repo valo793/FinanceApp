@@ -23,7 +23,7 @@ public sealed class DashboardService(FinanceDbContext dbContext) : IDashboardSer
             .ToDictionaryAsync(x => x.Id, x => x, cancellationToken);
 
         var investments = await dbContext.Investments
-            .Where(x => x.UserId == userId && x.IsActive)
+            .Where(x => x.UserId == userId && x.IsActive && !x.IsWatchlist)
             .ToListAsync(cancellationToken);
 
         var currentBalance = accounts.Sum(x => x.CurrentBalanceCached);
@@ -94,6 +94,64 @@ public sealed class DashboardService(FinanceDbContext dbContext) : IDashboardSer
             });
         }
 
+        // 1. Initial balance snapshot on/before 'from'
+        var closestBalanceDate = await dbContext.BalanceSnapshots
+            .Where(x => x.UserId == userId && x.SnapshotDate <= from)
+            .Select(x => (DateOnly?)x.SnapshotDate)
+            .OrderByDescending(x => x)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var initialBalance = closestBalanceDate.HasValue
+            ? await dbContext.BalanceSnapshots
+                .Where(x => x.UserId == userId && x.SnapshotDate == closestBalanceDate.Value)
+                .SumAsync(x => x.Balance, cancellationToken)
+            : currentBalance;
+
+        // 2. Initial investment value snapshot on/before 'from'
+        var closestInvestmentDate = await dbContext.InvestmentSnapshots
+            .Where(x => x.UserId == userId && x.SnapshotDate <= from)
+            .Select(x => (DateOnly?)x.SnapshotDate)
+            .OrderByDescending(x => x)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var initialInvestmentValue = closestInvestmentDate.HasValue
+            ? await dbContext.InvestmentSnapshots
+                .Where(x => x.UserId == userId && x.SnapshotDate == closestInvestmentDate.Value && dbContext.Investments.Any(i => i.Id == x.InvestmentId && !i.IsWatchlist))
+                .SumAsync(x => x.Value, cancellationToken)
+            : investedNetWorth;
+
+        var initialNetWorth = initialBalance + initialInvestmentValue;
+        var finalNetWorth = currentBalance + investedNetWorth;
+
+        // 3. Investment yields confirmed during the period
+        var monthYields = transactions
+            .Where(x => x.TransactionType == TransactionTypes.InvestmentYield && x.Status == TransactionStatuses.Confirmed)
+            .Sum(x => x.EffectiveAmount);
+
+        // 4. Calculate market price variation:
+        // Final Net Worth = Initial Net Worth + Income - Expenses + Yields + Market Variation
+        // So Market Variation = Final Net Worth - Initial Net Worth - Income + Expenses - Yields
+        var marketVariation = finalNetWorth - initialNetWorth - monthIncome + monthExpenses - monthYields;
+
+        var waterfallPoints = new List<WaterfallPointDto>
+        {
+            new() { Label = "Inicial", Value = initialNetWorth, Type = "start" },
+            new() { Label = "Receitas", Value = monthIncome, Type = "increase" },
+            new() { Label = "Despesas", Value = monthExpenses, Type = "decrease" },
+            new() { Label = "Rendimentos", Value = monthYields, Type = "increase" }
+        };
+
+        if (marketVariation >= 0)
+        {
+            waterfallPoints.Add(new() { Label = "Var. Mercado", Value = marketVariation, Type = "increase" });
+        }
+        else
+        {
+            waterfallPoints.Add(new() { Label = "Var. Mercado", Value = Math.Abs(marketVariation), Type = "decrease" });
+        }
+
+        waterfallPoints.Add(new() { Label = "Final", Value = finalNetWorth, Type = "end" });
+
         return new DashboardOverviewDto
         {
             CurrentBalance = currentBalance,
@@ -102,11 +160,12 @@ public sealed class DashboardService(FinanceDbContext dbContext) : IDashboardSer
             MonthExpenses = monthExpenses,
             NetResult = monthIncome - monthExpenses,
             InvestedNetWorth = investedNetWorth,
-            PendingRecurrences = await dbContext.RecurringTransactions.CountAsync(x => x.UserId == userId && x.IsActive && !x.IsPaused, cancellationToken),
+            PendingRecurrences = transactions.Count(x => x.Status == TransactionStatuses.Planned),
             CriticalAlerts = 0,
             ExpenseByCategory = expenseByCategory,
             CashflowSeries = series,
-            NetWorthSeries = netWorthSeries
+            NetWorthSeries = netWorthSeries,
+            WaterfallSeries = waterfallPoints
         };
     }
 }

@@ -21,6 +21,7 @@ public sealed partial class AddInvestmentDialog : ContentDialog
     public decimal AveragePrice => (decimal)AveragePriceInput.Value;
     public decimal CurrentPrice => (decimal)CurrentPriceInput.Value;
     public string RiskLevel => (RiskLevelInput.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "moderate";
+    public bool IsWatchlist => IsWatchlistInput.IsChecked ?? false;
 
     public string? IndexerType => IndexerPanel.Visibility == Visibility.Visible ? (IndexerTypeInput.SelectedItem as ComboBoxItem)?.Tag?.ToString() : null;
     public decimal? IndexerRate => IndexerPanel.Visibility == Visibility.Visible ? (decimal?)IndexerRateInput.Value : null;
@@ -40,6 +41,7 @@ public sealed partial class AddInvestmentDialog : ContentDialog
         QuantityInput.Value = (double)existing.Quantity;
         AveragePriceInput.Value = (double)existing.AveragePrice;
         CurrentPriceInput.Value = (double)existing.CurrentPrice;
+        IsWatchlistInput.IsChecked = existing.IsWatchlist;
 
         SetComboBoxSelectedTag(AssetTypeInput, existing.AssetType);
         SetComboBoxSelectedTag(RiskLevelInput, existing.RiskLevel);
@@ -74,16 +76,20 @@ public sealed partial class AddInvestmentDialog : ContentDialog
 
     private void AssetTypeInput_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (IndexerPanel == null) return;
+        if (IndexerPanel == null || TickerPanel == null) return;
 
         var selectedTag = (AssetTypeInput.SelectedItem as ComboBoxItem)?.Tag?.ToString();
         if (selectedTag == "cdb" || selectedTag == "tesouro")
         {
             IndexerPanel.Visibility = Visibility.Visible;
+            TickerPanel.Visibility = Visibility.Collapsed;
+            TickerInput.Text = string.Empty;
+            ValidationStatusText.Visibility = Visibility.Collapsed;
         }
         else
         {
             IndexerPanel.Visibility = Visibility.Collapsed;
+            TickerPanel.Visibility = Visibility.Visible;
         }
     }
 

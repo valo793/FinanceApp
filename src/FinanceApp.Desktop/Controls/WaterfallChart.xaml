@@ -1,0 +1,31 @@
+<UserControl
+    x:Class="FinanceApp.Desktop.Controls.WaterfallChart"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    SizeChanged="UserControl_SizeChanged">
+
+    <Grid x:Name="ChartGrid" Height="220" Margin="0,10,0,10">
+        <Canvas x:Name="ChartCanvas" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <!-- Grid Lines and Y-Axis Labels -->
+            <Canvas x:Name="GridLinesCanvas" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+
+            <!-- Bars, Connectors, and X-Axis Labels -->
+            <Canvas x:Name="BarsCanvas" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            
+            <!-- Tooltip Overlay -->
+            <Border x:Name="TooltipBorder" 
+                    Background="#1E1E1E" 
+                    BorderBrush="#333333" 
+                    BorderThickness="1" 
+                    Padding="10,6" 
+                    CornerRadius="6" 
+                    Visibility="Collapsed" 
+                    Canvas.ZIndex="10">
+                <StackPanel>
+                    <TextBlock x:Name="TooltipLabel" FontSize="11" Foreground="#888888" />
+                    <TextBlock x:Name="TooltipValue" FontSize="13" FontWeight="SemiBold" Foreground="#FFFFFF" />
+                </StackPanel>
+            </Border>
+        </Canvas>
+    </Grid>
+</UserControl>

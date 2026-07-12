@@ -40,6 +40,34 @@
                   SelectedValuePath="Id"
                   ToolTipService.ToolTip="A classificação de gastos ou receitas (ex: Alimentação, Lazer)." />
                   
+        <!-- Investment Fields -->
+        <StackPanel x:Name="InvestmentFields" Spacing="16" Visibility="Collapsed">
+            <ComboBox x:Name="InvestmentInput" 
+                      Header="Investimento *" 
+                      HorizontalAlignment="Stretch"
+                      DisplayMemberPath="Name"
+                      SelectedValuePath="Id"
+                      ToolTipService.ToolTip="O ativo objeto desta transação de investimento." />
+                      
+            <StackPanel x:Name="BuySellFields" Spacing="16" Visibility="Collapsed">
+                <NumberBox x:Name="QuantityInput" 
+                           Header="Quantidade *" 
+                           Value="0" 
+                           Minimum="0.000001"
+                           SpinButtonPlacementMode="Compact"
+                           ValueChanged="OnBuySellFieldsChanged"
+                           ToolTipService.ToolTip="Quantidade de cotas/ações negociadas." />
+                           
+                <NumberBox x:Name="UnitPriceInput" 
+                           Header="Preço Unitário (R$) *" 
+                           Value="0" 
+                           Minimum="0.000001"
+                           SpinButtonPlacementMode="Compact"
+                           ValueChanged="OnBuySellFieldsChanged"
+                           ToolTipService.ToolTip="O valor unitário pago ou recebido por cota/ação." />
+            </StackPanel>
+        </StackPanel>
+                  
         <CheckBox x:Name="IsFixedInput" 
                   Content="Lançamento Fixo (Recorrente)" 
                   Checked="IsFixedInput_Checked"

@@ -4,6 +4,22 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="FinanceApp">
     <Grid Background="{StaticResource BgPrimaryBrush}">
+        <Grid.KeyboardAccelerators>
+            <!-- Navigation Shortcuts -->
+            <KeyboardAccelerator Key="D" Modifiers="Control" Invoked="NavAccelerator_Invoked" />
+            <KeyboardAccelerator Key="T" Modifiers="Control" Invoked="NavAccelerator_Invoked" />
+            <KeyboardAccelerator Key="A" Modifiers="Control" Invoked="NavAccelerator_Invoked" />
+            <KeyboardAccelerator Key="R" Modifiers="Control" Invoked="NavAccelerator_Invoked" />
+            <KeyboardAccelerator Key="I" Modifiers="Control" Invoked="NavAccelerator_Invoked" />
+            <KeyboardAccelerator Key="S" Modifiers="Control" Invoked="NavAccelerator_Invoked" />
+            <KeyboardAccelerator Key="Q" Modifiers="Control" Invoked="LogoutAccelerator_Invoked" />
+
+            <!-- Global Actions -->
+            <KeyboardAccelerator Key="F11" Invoked="FullScreenAccelerator_Invoked" />
+            <KeyboardAccelerator Key="B" Modifiers="Control" Invoked="TogglePaneAccelerator_Invoked" />
+            <KeyboardAccelerator Key="P" Modifiers="Control" Invoked="OpenCommandPaletteAccelerator_Invoked" />
+            <KeyboardAccelerator Key="H" Modifiers="Control" Invoked="ToggleValuesAccelerator_Invoked" />
+        </Grid.KeyboardAccelerators>
         <NavigationView x:Name="NavView"
                         PaneDisplayMode="Left"
                         IsBackButtonVisible="Collapsed"
@@ -15,17 +31,11 @@
                 <NavigationViewItem Content="Dashboard" Tag="dashboard">
                     <NavigationViewItem.Icon><SymbolIcon Symbol="Home" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem Content="Gastos" Tag="expenses">
-                    <NavigationViewItem.Icon><SymbolIcon Symbol="Remove" /></NavigationViewItem.Icon>
-                </NavigationViewItem>
-                <NavigationViewItem Content="Receitas" Tag="incomes">
-                    <NavigationViewItem.Icon><SymbolIcon Symbol="Add" /></NavigationViewItem.Icon>
+                <NavigationViewItem Content="Transações" Tag="transactions">
+                    <NavigationViewItem.Icon><SymbolIcon Symbol="List" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="Contas" Tag="accounts">
                     <NavigationViewItem.Icon><SymbolIcon Symbol="Contact" /></NavigationViewItem.Icon>
-                </NavigationViewItem>
-                <NavigationViewItem Content="Categorias" Tag="categories">
-                    <NavigationViewItem.Icon><SymbolIcon Symbol="Folder" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="Recorrências" Tag="recurring">
                     <NavigationViewItem.Icon><SymbolIcon Symbol="Refresh" /></NavigationViewItem.Icon>

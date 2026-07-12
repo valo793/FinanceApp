@@ -21,6 +21,7 @@ public sealed class Investment : BaseEntity
     public string? IndexerType { get; private set; }
     public decimal? IndexerRate { get; private set; }
     public decimal? IndexerAdditionalRate { get; private set; }
+    public bool IsWatchlist { get; private set; }
 
     public decimal TotalInvested => Quantity * AveragePrice;
     public decimal CurrentValue => Quantity * CurrentPrice;
@@ -28,7 +29,7 @@ public sealed class Investment : BaseEntity
 
     private Investment() { }
 
-    public Investment(Guid userId, Guid walletId, string name, string? ticker, string assetType, decimal quantity, decimal averagePrice, decimal currentPrice, string currencyCode, string riskLevel, string? indexerType = null, decimal? indexerRate = null, decimal? indexerAdditionalRate = null)
+    public Investment(Guid userId, Guid walletId, string name, string? ticker, string assetType, decimal quantity, decimal averagePrice, decimal currentPrice, string currencyCode, string riskLevel, string? indexerType = null, decimal? indexerRate = null, decimal? indexerAdditionalRate = null, bool isWatchlist = false)
     {
         UserId = userId;
         WalletId = walletId;
@@ -43,9 +44,10 @@ public sealed class Investment : BaseEntity
         IndexerType = indexerType;
         IndexerRate = indexerRate;
         IndexerAdditionalRate = indexerAdditionalRate;
+        IsWatchlist = isWatchlist;
     }
 
-    public void Update(string name, string? ticker, string assetType, decimal quantity, decimal averagePrice, decimal currentPrice, string riskLevel, bool isActive, string? indexerType = null, decimal? indexerRate = null, decimal? indexerAdditionalRate = null)
+    public void Update(string name, string? ticker, string assetType, decimal quantity, decimal averagePrice, decimal currentPrice, string riskLevel, bool isActive, string? indexerType = null, decimal? indexerRate = null, decimal? indexerAdditionalRate = null, bool isWatchlist = false)
     {
         Name = name;
         Ticker = ticker;
@@ -58,12 +60,20 @@ public sealed class Investment : BaseEntity
         IndexerType = indexerType;
         IndexerRate = indexerRate;
         IndexerAdditionalRate = indexerAdditionalRate;
+        IsWatchlist = isWatchlist;
         Touch();
     }
 
     public void UpdateCurrentPrice(decimal currentPrice)
     {
         CurrentPrice = currentPrice;
+        Touch();
+    }
+
+    public void UpdatePosition(decimal quantity, decimal averagePrice)
+    {
+        Quantity = quantity;
+        AveragePrice = averagePrice;
         Touch();
     }
 

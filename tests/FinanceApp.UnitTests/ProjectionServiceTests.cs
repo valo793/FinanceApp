@@ -37,7 +37,7 @@ public sealed class ProjectionServiceTests
         dbContext.Accounts.AddRange(account1, account2);
         await dbContext.SaveChangesAsync();
 
-        var service = new ProjectionService(dbContext);
+        var service = new ProjectionService(dbContext, new StubCustodyService());
 
         // Act
         var result = await service.GetProjectionAsync(UserId, months: 1, CancellationToken.None);
@@ -74,7 +74,7 @@ public sealed class ProjectionServiceTests
         dbContext.Transactions.Add(plannedIncome);
         await dbContext.SaveChangesAsync();
 
-        var service = new ProjectionService(dbContext);
+        var service = new ProjectionService(dbContext, new StubCustodyService());
 
         // Act
         var result = await service.GetProjectionAsync(UserId, months: 1, CancellationToken.None);
@@ -129,7 +129,7 @@ public sealed class ProjectionServiceTests
         dbContext.Transactions.Add(existingPlanned);
         await dbContext.SaveChangesAsync();
 
-        var service = new ProjectionService(dbContext);
+        var service = new ProjectionService(dbContext, new StubCustodyService());
 
         // Act
         var result = await service.GetProjectionAsync(UserId, months: 1, CancellationToken.None);
@@ -144,5 +144,13 @@ public sealed class ProjectionServiceTests
         var twoWeeksPoint = result.FirstOrDefault(x => x.Date == twoWeeks);
         twoWeeksPoint.Should().NotBeNull();
         twoWeeksPoint!.ProjectedBalance.Should().Be(800m); // 900 - 100 (simulated run)
+    }
+
+    private sealed class StubCustodyService : FinanceApp.Application.Abstractions.ICustodyService
+    {
+        public Task RecalculatePositionAsync(Guid userId, Guid investmentId, CancellationToken ct) => Task.CompletedTask;
+        public Task RecalculateAllPositionsAsync(Guid userId, CancellationToken ct) => Task.CompletedTask;
+        public Task<decimal> GetAccumulatedYieldAsync(Guid userId, Guid investmentId, CancellationToken ct) => Task.FromResult(0m);
+        public Task<decimal?> GetHistoricalAnnualReturnAsync(Guid userId, Guid investmentId, CancellationToken ct) => Task.FromResult<decimal?>(null);
     }
 }

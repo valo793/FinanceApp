@@ -134,6 +134,14 @@
                 </Border>
             </Grid>
 
+            <!-- Row 2.5: Fluxo de Caixa e Variação (Gráfico de Cascata) -->
+            <Border Padding="20" CornerRadius="16" Background="{StaticResource BgSurfaceBrush}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Conciliação de Patrimônio e Fluxo de Caixa" FontSize="18" Foreground="{StaticResource TextPrimaryBrush}" />
+                    <controls:WaterfallChart ItemsSource="{x:Bind ViewModel.WaterfallPoints, Mode=OneWay}" />
+                </StackPanel>
+            </Border>
+
             <!-- Row 3: Net Worth Projection and Recurrences -->
             <Grid ColumnSpacing="16">
                 <Grid.ColumnDefinitions>

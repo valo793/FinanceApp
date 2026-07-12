@@ -15,12 +15,80 @@ public partial class InvestmentsViewModel(ApiClient apiClient, InfoBarService in
 {
     [ObservableProperty] private ObservableCollection<InvestmentDto> investments = [];
     [ObservableProperty] private ObservableCollection<ChartDataPoint> historyPoints = [];
+    [ObservableProperty] private ObservableCollection<CandlestickDataPoint> candlestickPoints = [];
+    [ObservableProperty] private InvestmentDto? selectedInvestment;
+    [ObservableProperty] private bool showCandlestickChart;
+    [ObservableProperty] private string chartTitle = "Evolução do Patrimônio Investido";
     [ObservableProperty] private bool isBusy;
     [ObservableProperty] private string? errorMessage;
 
     [ObservableProperty] private decimal totalInvested;
     [ObservableProperty] private decimal currentValue;
     [ObservableProperty] private decimal gainLossPercent;
+
+    [ObservableProperty] private bool isWatchlistMode;
+    [ObservableProperty] private string? selectedCategory = "Todas";
+    [ObservableProperty] private InvestmentDto? selectedFilterInvestment;
+    [ObservableProperty] private ObservableCollection<InvestmentDto> filterInvestments = [];
+    public ObservableCollection<string> Categories { get; } = ["Todas", "Ações", "FIIs", "CDB", "Tesouro Direto", "Cripto", "Outros Fundos"];
+
+    partial void OnIsWatchlistModeChanged(bool value)
+    {
+        _ = LoadAsync();
+    }
+
+    partial void OnSelectedCategoryChanged(string? value)
+    {
+        _ = LoadHistoryAsync();
+    }
+
+    partial void OnSelectedFilterInvestmentChanged(InvestmentDto? value)
+    {
+        _ = LoadHistoryAsync();
+    }
+
+    partial void OnSelectedInvestmentChanged(InvestmentDto? value)
+    {
+        if (value != null && !string.IsNullOrWhiteSpace(value.Ticker))
+        {
+            ChartTitle = $"Variação de Preço — {value.Ticker}";
+            _ = LoadCandlesticksAsync(value.Id);
+        }
+        else
+        {
+            ChartTitle = "Evolução do Patrimônio Investido";
+            ShowCandlestickChart = false;
+            CandlestickPoints.Clear();
+        }
+    }
+
+    private async Task LoadCandlesticksAsync(Guid id)
+    {
+        try
+        {
+            IsBusy = true;
+            var points = await apiClient.GetInvestmentCandlesticksAsync(id);
+            CandlestickPoints = new ObservableCollection<CandlestickDataPoint>(
+                points.Select(x => new CandlestickDataPoint(
+                    x.Date, 
+                    (double)x.Open, 
+                    (double)x.High, 
+                    (double)x.Low, 
+                    (double)x.Close, 
+                    x.Volume))
+            );
+            ShowCandlestickChart = true;
+        }
+        catch (Exception ex)
+        {
+            infoBarService.Error($"Erro ao carregar dados de velas: {ex.Message}");
+            ShowCandlestickChart = false;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
 
     public string TotalInvestedText => $"R$ {TotalInvested:N2}";
     public string CurrentValueText => $"R$ {CurrentValue:N2}";
@@ -34,7 +102,7 @@ public partial class InvestmentsViewModel(ApiClient apiClient, InfoBarService in
             IsBusy = true;
             ErrorMessage = null;
 
-            var items = await apiClient.GetInvestmentsAsync();
+            var items = await apiClient.GetInvestmentsAsync(isWatchlist: IsWatchlistMode);
             Investments = new ObservableCollection<InvestmentDto>(items);
 
             var summary = await apiClient.GetInvestmentSummaryAsync();
@@ -55,10 +123,17 @@ public partial class InvestmentsViewModel(ApiClient apiClient, InfoBarService in
             OnPropertyChanged(nameof(CurrentValueText));
             OnPropertyChanged(nameof(GainLossPercentText));
 
-            var history = await apiClient.GetInvestmentHistoryAsync();
-            HistoryPoints = new ObservableCollection<ChartDataPoint>(
-                history.Select(x => new ChartDataPoint(x.Date.ToString("dd/MM"), (double)x.Value))
-            );
+            // Load filter investments list (only real assets for the history filter)
+            var realAssets = await apiClient.GetInvestmentsAsync(isWatchlist: false);
+            var filterList = new List<InvestmentDto> { new() { Id = Guid.Empty, Name = "Todos os ativos" } };
+            filterList.AddRange(realAssets);
+            FilterInvestments = new ObservableCollection<InvestmentDto>(filterList);
+            if (SelectedFilterInvestment == null)
+            {
+                SelectedFilterInvestment = filterList.First();
+            }
+
+            await LoadHistoryAsync();
         }
         catch (Exception ex)
         {
@@ -70,6 +145,36 @@ public partial class InvestmentsViewModel(ApiClient apiClient, InfoBarService in
             IsBusy = false;
         }
     }
+
+    [RelayCommand]
+    public async Task LoadHistoryAsync()
+    {
+        try
+        {
+            string? catFilter = SelectedCategory == "Todas" || string.IsNullOrWhiteSpace(SelectedCategory) ? null : MapCategoryTag(SelectedCategory);
+            Guid? invFilter = SelectedFilterInvestment?.Id == Guid.Empty ? null : SelectedFilterInvestment?.Id;
+
+            var history = await apiClient.GetInvestmentHistoryAsync(category: catFilter, investmentId: invFilter);
+            HistoryPoints = new ObservableCollection<ChartDataPoint>(
+                history.Select(x => new ChartDataPoint(x.Date.ToString("dd/MM"), (double)x.Value))
+            );
+        }
+        catch (Exception ex)
+        {
+            infoBarService.Error($"Erro ao carregar histórico: {ex.Message}");
+        }
+    }
+
+    private string MapCategoryTag(string display) => display switch
+    {
+        "Ações" => "stock",
+        "FIIs" => "fii",
+        "CDB" => "cdb",
+        "Tesouro Direto" => "tesouro",
+        "Cripto" => "crypto",
+        "Outros Fundos" => "fund",
+        _ => display.ToLower()
+    };
 
     [RelayCommand]
     private async Task SyncPricesAsync()

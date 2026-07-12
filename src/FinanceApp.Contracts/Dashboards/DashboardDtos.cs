@@ -13,6 +13,14 @@ public sealed class DashboardOverviewDto
     public IReadOnlyCollection<CategoryAmountDto> ExpenseByCategory { get; init; } = [];
     public IReadOnlyCollection<TimeSeriesPointDto> CashflowSeries { get; init; } = [];
     public IReadOnlyCollection<NetWorthPointDto> NetWorthSeries { get; init; } = [];
+    public IReadOnlyCollection<WaterfallPointDto> WaterfallSeries { get; init; } = [];
+}
+
+public sealed class WaterfallPointDto
+{
+    public required string Label { get; init; }
+    public decimal Value { get; init; }
+    public required string Type { get; init; } // "start", "increase", "decrease", "end"
 }
 
 public sealed class NetWorthPointDto

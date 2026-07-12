@@ -16,6 +16,9 @@ public sealed class TransactionDto
     public string CurrencyCode { get; init; } = "BRL";
     public bool IsFixed { get; init; }
     public long LockVersion { get; init; }
+    public Guid? InvestmentId { get; init; }
+    public decimal? InvestmentQuantity { get; init; }
+    public decimal? UnitPrice { get; init; }
 }
 
 public sealed class UpsertTransactionRequest
@@ -35,4 +38,7 @@ public sealed class UpsertTransactionRequest
     public string CurrencyCode { get; init; } = "BRL";
     public bool IsFixed { get; init; }
     public long? LockVersion { get; init; }
+    public Guid? InvestmentId { get; init; }
+    public decimal? InvestmentQuantity { get; init; }
+    public decimal? UnitPrice { get; init; }
 }

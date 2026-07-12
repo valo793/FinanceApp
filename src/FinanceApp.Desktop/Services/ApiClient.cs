@@ -292,11 +292,17 @@ public sealed class ApiClient
     }
 
     // ── Investments ──────────────────────────────────────────────
-    public async Task<IReadOnlyCollection<InvestmentDto>> GetInvestmentsAsync(Guid? walletId = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<InvestmentDto>> GetInvestmentsAsync(Guid? walletId = null, bool? isWatchlist = null, CancellationToken cancellationToken = default)
     {
-        var url = "api/v1/investments";
+        var queryParams = new List<string>();
         if (walletId.HasValue)
-            url += $"?walletId={walletId.Value}";
+            queryParams.Add($"walletId={walletId.Value}");
+        if (isWatchlist.HasValue)
+            queryParams.Add($"isWatchlist={isWatchlist.Value.ToString().ToLower()}");
+
+        var url = "api/v1/investments";
+        if (queryParams.Count > 0)
+            url += "?" + string.Join("&", queryParams);
 
         var response = await SendWithRefreshAsync(() =>
             new HttpRequestMessage(HttpMethod.Get, url), cancellationToken);
@@ -312,12 +318,36 @@ public sealed class ApiClient
         return await response.Content.ReadFromJsonAsync<PortfolioSummaryDto>(cancellationToken: cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<InvestmentHistoryPointDto>> GetInvestmentHistoryAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<InvestmentHistoryPointDto>> GetInvestmentHistoryAsync(string? category = null, Guid? investmentId = null, CancellationToken cancellationToken = default)
     {
+        var queryParams = new List<string>();
+        if (!string.IsNullOrWhiteSpace(category))
+            queryParams.Add($"category={Uri.EscapeDataString(category)}");
+        if (investmentId.HasValue)
+            queryParams.Add($"investmentId={investmentId.Value}");
+
+        var url = "api/v1/investments/history";
+        if (queryParams.Count > 0)
+            url += "?" + string.Join("&", queryParams);
+
         var response = await SendWithRefreshAsync(() =>
-            new HttpRequestMessage(HttpMethod.Get, "api/v1/investments/history"), cancellationToken);
+            new HttpRequestMessage(HttpMethod.Get, url), cancellationToken);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<IReadOnlyCollection<InvestmentHistoryPointDto>>(cancellationToken: cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyCollection<CandlestickPointDto>> GetInvestmentCandlesticksAsync(Guid id, DateOnly? from = null, DateOnly? to = null, CancellationToken cancellationToken = default)
+    {
+        var url = $"api/v1/investments/{id}/candlesticks";
+        var queryParams = new List<string>();
+        if (from.HasValue) queryParams.Add($"from={from.Value:yyyy-MM-dd}");
+        if (to.HasValue) queryParams.Add($"to={to.Value:yyyy-MM-dd}");
+        if (queryParams.Count > 0) url += "?" + string.Join("&", queryParams);
+
+        var response = await SendWithRefreshAsync(() =>
+            new HttpRequestMessage(HttpMethod.Get, url), cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<IReadOnlyCollection<CandlestickPointDto>>(cancellationToken: cancellationToken) ?? [];
     }
 
     public async Task<InvestmentDto?> CreateInvestmentAsync(CreateInvestmentRequest request, CancellationToken cancellationToken = default)

@@ -29,6 +29,10 @@ public partial class DashboardViewModel(ApiClient apiClient, CacheService cacheS
         Overview?.ExpenseByCategory?.Select(x => new ChartDataPoint(x.Name, (double)x.Amount)) 
         ?? Enumerable.Empty<ChartDataPoint>();
 
+    public IEnumerable<WaterfallDataPoint> WaterfallPoints =>
+        Overview?.WaterfallSeries?.Select(x => new WaterfallDataPoint(x.Label, (double)x.Value, x.Type)) 
+        ?? Enumerable.Empty<WaterfallDataPoint>();
+
     public string CurrentBalanceText => HideValues ? "R$ •••••" : (Overview is null ? "R$ 0,00" : $"R$ {Overview.CurrentBalance:N2}");
     public string ProjectedBalanceText => HideValues ? "R$ •••••" : (Overview is null ? "R$ 0,00" : $"R$ {Overview.ProjectedBalance:N2}");
     public string MonthIncomeText => HideValues ? "R$ •••••" : (Overview is null ? "R$ 0,00" : $"R$ {Overview.MonthIncome:N2}");
@@ -56,6 +60,7 @@ public partial class DashboardViewModel(ApiClient apiClient, CacheService cacheS
         OnPropertyChanged(nameof(NetWorthPoints));
         OnPropertyChanged(nameof(CashflowPoints));
         OnPropertyChanged(nameof(ExpenseByCategoryPoints));
+        OnPropertyChanged(nameof(WaterfallPoints));
     }
 
     [RelayCommand]

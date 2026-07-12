@@ -24,6 +24,7 @@ public static class DependencyInjection
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IWalletService, WalletService>();
         services.AddScoped<IRecurringService, RecurringService>();
+        services.AddScoped<ICustodyService, CustodyService>();
         services.AddScoped<IInvestmentService, InvestmentService>();
         services.AddScoped<IUserPreferenceService, UserPreferenceService>();
         services.AddScoped<IProjectionService, ProjectionService>();

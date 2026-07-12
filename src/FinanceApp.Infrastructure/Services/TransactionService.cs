@@ -2,13 +2,14 @@ using FinanceApp.Application.Abstractions;
 using FinanceApp.Contracts.Common;
 using FinanceApp.Contracts.Transactions;
 using FinanceApp.Domain.Entities;
+using FinanceApp.Domain.Enums;
 using FinanceApp.Domain.Services;
 using FinanceApp.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace FinanceApp.Infrastructure.Services;
 
-public sealed class TransactionService(FinanceDbContext dbContext) : ITransactionService
+public sealed class TransactionService(FinanceDbContext dbContext, ICustodyService custodyService) : ITransactionService
 {
     public async Task<PagedResult<TransactionDto>> ListAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken)
     {
@@ -59,11 +60,22 @@ public sealed class TransactionService(FinanceDbContext dbContext) : ITransactio
             request.ExpenseCategoryId,
             request.DueDate,
             request.PaidAt,
-            request.IsFixed);
+            request.IsFixed,
+            null,
+            "manual",
+            request.InvestmentId,
+            request.InvestmentQuantity,
+            request.UnitPrice);
 
         dbContext.Transactions.Add(entity);
         await dbContext.SaveChangesAsync(cancellationToken);
         await RecalculateBalancesAsync(userId, cancellationToken);
+
+        if (entity.InvestmentId.HasValue && IsInvestmentType(entity.TransactionType))
+        {
+            await custodyService.RecalculatePositionAsync(userId, entity.InvestmentId.Value, cancellationToken);
+        }
+
         return Map.Compile().Invoke(entity);
     }
 
@@ -71,6 +83,9 @@ public sealed class TransactionService(FinanceDbContext dbContext) : ITransactio
     {
         var entity = await dbContext.Transactions.FirstOrDefaultAsync(x => x.UserId == userId && x.Id == id && !x.IsDeleted, cancellationToken)
             ?? throw new KeyNotFoundException("Lançamento não encontrado.");
+
+        var oldInvestmentId = entity.InvestmentId;
+        var oldTransactionType = entity.TransactionType;
 
         entity.Update(
             request.TransactionType,
@@ -86,10 +101,23 @@ public sealed class TransactionService(FinanceDbContext dbContext) : ITransactio
             request.ExpenseCategoryId,
             request.DueDate,
             request.PaidAt,
-            request.IsFixed);
+            request.IsFixed,
+            request.InvestmentId,
+            request.InvestmentQuantity,
+            request.UnitPrice);
 
         await dbContext.SaveChangesAsync(cancellationToken);
         await RecalculateBalancesAsync(userId, cancellationToken);
+
+        if (oldInvestmentId.HasValue && IsInvestmentType(oldTransactionType))
+        {
+            await custodyService.RecalculatePositionAsync(userId, oldInvestmentId.Value, cancellationToken);
+        }
+        if (entity.InvestmentId.HasValue && entity.InvestmentId != oldInvestmentId && IsInvestmentType(entity.TransactionType))
+        {
+            await custodyService.RecalculatePositionAsync(userId, entity.InvestmentId.Value, cancellationToken);
+        }
+
         return Map.Compile().Invoke(entity);
     }
 
@@ -98,9 +126,17 @@ public sealed class TransactionService(FinanceDbContext dbContext) : ITransactio
         var entity = await dbContext.Transactions.FirstOrDefaultAsync(x => x.UserId == userId && x.Id == id && !x.IsDeleted, cancellationToken)
             ?? throw new KeyNotFoundException("Lançamento não encontrado.");
 
+        var investmentId = entity.InvestmentId;
+        var transactionType = entity.TransactionType;
+
         entity.MarkDeleted(userId);
         await dbContext.SaveChangesAsync(cancellationToken);
         await RecalculateBalancesAsync(userId, cancellationToken);
+
+        if (investmentId.HasValue && IsInvestmentType(transactionType))
+        {
+            await custodyService.RecalculatePositionAsync(userId, investmentId.Value, cancellationToken);
+        }
     }
 
     public async Task ConfirmExpenseAsync(Guid userId, Guid id, CancellationToken cancellationToken)
@@ -111,6 +147,11 @@ public sealed class TransactionService(FinanceDbContext dbContext) : ITransactio
         entity.Confirm(DateTimeOffset.UtcNow);
         await dbContext.SaveChangesAsync(cancellationToken);
         await RecalculateBalancesAsync(userId, cancellationToken);
+
+        if (entity.InvestmentId.HasValue && IsInvestmentType(entity.TransactionType))
+        {
+            await custodyService.RecalculatePositionAsync(userId, entity.InvestmentId.Value, cancellationToken);
+        }
     }
 
     private async Task RecalculateBalancesAsync(Guid userId, CancellationToken cancellationToken)
@@ -142,6 +183,14 @@ public sealed class TransactionService(FinanceDbContext dbContext) : ITransactio
         AmountActual = x.AmountActual,
         CurrencyCode = x.CurrencyCode,
         IsFixed = x.IsFixed,
-        LockVersion = x.LockVersion
+        LockVersion = x.LockVersion,
+        InvestmentId = x.InvestmentId,
+        InvestmentQuantity = x.InvestmentQuantity,
+        UnitPrice = x.UnitPrice
     };
+
+    private static bool IsInvestmentType(string type) =>
+        type is TransactionTypes.InvestmentBuy
+            or TransactionTypes.InvestmentSell
+            or TransactionTypes.InvestmentYield;
 }

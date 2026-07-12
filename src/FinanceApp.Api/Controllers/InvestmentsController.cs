@@ -14,8 +14,8 @@ namespace FinanceApp.Api.Controllers;
 public sealed class InvestmentsController(IInvestmentService investmentService, ICurrentUserContext currentUser, IAuditService auditService, IAssetPriceService priceService) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> List([FromQuery] Guid? walletId, CancellationToken cancellationToken) =>
-        Ok(await investmentService.ListAsync(currentUser.UserId, walletId, cancellationToken));
+    public async Task<IActionResult> List([FromQuery] Guid? walletId, [FromQuery] bool? isWatchlist, CancellationToken cancellationToken) =>
+        Ok(await investmentService.ListAsync(currentUser.UserId, walletId, isWatchlist, cancellationToken));
 
     [HttpGet("validate")]
     public async Task<IActionResult> Validate([FromQuery] string ticker, CancellationToken cancellationToken)
@@ -33,8 +33,17 @@ public sealed class InvestmentsController(IInvestmentService investmentService, 
         Ok(await investmentService.GetPortfolioSummaryAsync(currentUser.UserId, cancellationToken));
 
     [HttpGet("history")]
-    public async Task<IActionResult> History(CancellationToken cancellationToken) =>
-        Ok(await investmentService.GetHistoryAsync(currentUser.UserId, cancellationToken));
+    public async Task<IActionResult> History([FromQuery] string? category, [FromQuery] Guid? investmentId, CancellationToken cancellationToken) =>
+        Ok(await investmentService.GetHistoryAsync(currentUser.UserId, category, investmentId, cancellationToken));
+
+    [HttpGet("{id:guid}/candlesticks")]
+    public async Task<IActionResult> GetCandlesticks(Guid id, [FromQuery] DateOnly? from, [FromQuery] DateOnly? to, CancellationToken cancellationToken)
+    {
+        var periodFrom = from ?? DateOnly.FromDateTime(DateTime.Today.AddDays(-30));
+        var periodTo = to ?? DateOnly.FromDateTime(DateTime.Today);
+        var data = await investmentService.GetInvestmentCandlesticksAsync(currentUser.UserId, id, periodFrom, periodTo, cancellationToken);
+        return Ok(data);
+    }
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateInvestmentRequest request, CancellationToken cancellationToken)
