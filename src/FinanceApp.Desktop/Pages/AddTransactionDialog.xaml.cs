@@ -34,6 +34,27 @@ public sealed partial class AddTransactionDialog : ContentDialog
             if (preSelectedInvestmentId.HasValue)
             {
                 InvestmentInput.SelectedValue = preSelectedInvestmentId.Value;
+                
+                var inv = System.Linq.Enumerable.FirstOrDefault(investments, x => x.Id == preSelectedInvestmentId.Value);
+                if (inv != null)
+                {
+                    if (transactionType == "investment_sell")
+                    {
+                        QuantityInput.Value = (double)inv.Quantity;
+                        UnitPriceInput.Value = (double)inv.CurrentPrice;
+                        AmountInput.Value = (double)(inv.Quantity * inv.CurrentPrice);
+                        DescriptionInput.Text = $"Venda total de {inv.Ticker ?? inv.Name}";
+                    }
+                    else if (transactionType == "investment_buy")
+                    {
+                        UnitPriceInput.Value = (double)inv.CurrentPrice;
+                        DescriptionInput.Text = $"Compra de {inv.Ticker ?? inv.Name}";
+                    }
+                    else if (transactionType == "investment_yield")
+                    {
+                        DescriptionInput.Text = $"Rendimento de {inv.Ticker ?? inv.Name}";
+                    }
+                }
             }
             else
             {

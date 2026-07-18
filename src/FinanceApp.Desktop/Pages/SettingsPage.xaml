@@ -55,12 +55,13 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                            <TextBlock Text="Densidade do Layout" FontSize="14" Foreground="{StaticResource TextPrimaryBrush}" />
-                            <TextBlock Text="Compacta para visualizar mais itens ou Confortável para maior respiro" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0" />
+                            <TextBlock Text="Modo de Exibição da Janela" FontSize="14" Foreground="{StaticResource TextPrimaryBrush}" />
+                            <TextBlock Text="Escolha como o aplicativo deve abrir por padrão" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0" />
                         </StackPanel>
-                        <ComboBox x:Name="DensityInput" Grid.Column="1" Width="150" SelectedIndex="0">
-                            <ComboBoxItem Tag="comfortable">Confortável</ComboBoxItem>
-                            <ComboBoxItem Tag="compact">Compacta</ComboBoxItem>
+                        <ComboBox x:Name="WindowModeInput" Grid.Column="1" Width="170" SelectedIndex="0">
+                            <ComboBoxItem Tag="windowed">Modo Janela</ComboBoxItem>
+                            <ComboBoxItem Tag="maximized">Maximizado</ComboBoxItem>
+                            <ComboBoxItem Tag="fullscreen">Tela Cheia (Full Screen)</ComboBoxItem>
                         </ComboBox>
                     </Grid>
                 </StackPanel>

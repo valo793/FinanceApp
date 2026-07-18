@@ -22,6 +22,9 @@ public sealed class Investment : BaseEntity
     public decimal? IndexerRate { get; private set; }
     public decimal? IndexerAdditionalRate { get; private set; }
     public bool IsWatchlist { get; private set; }
+    public Guid? AccountId { get; private set; }
+    public DateOnly? PurchaseDate { get; private set; }
+    public bool IsPinned { get; private set; }
 
     public decimal TotalInvested => Quantity * AveragePrice;
     public decimal CurrentValue => Quantity * CurrentPrice;
@@ -29,7 +32,7 @@ public sealed class Investment : BaseEntity
 
     private Investment() { }
 
-    public Investment(Guid userId, Guid walletId, string name, string? ticker, string assetType, decimal quantity, decimal averagePrice, decimal currentPrice, string currencyCode, string riskLevel, string? indexerType = null, decimal? indexerRate = null, decimal? indexerAdditionalRate = null, bool isWatchlist = false)
+    public Investment(Guid userId, Guid walletId, string name, string? ticker, string assetType, decimal quantity, decimal averagePrice, decimal currentPrice, string currencyCode, string riskLevel, string? indexerType = null, decimal? indexerRate = null, decimal? indexerAdditionalRate = null, bool isWatchlist = false, Guid? accountId = null, DateOnly? purchaseDate = null, bool isPinned = false)
     {
         UserId = userId;
         WalletId = walletId;
@@ -45,9 +48,12 @@ public sealed class Investment : BaseEntity
         IndexerRate = indexerRate;
         IndexerAdditionalRate = indexerAdditionalRate;
         IsWatchlist = isWatchlist;
+        AccountId = accountId;
+        PurchaseDate = purchaseDate;
+        IsPinned = isPinned;
     }
 
-    public void Update(string name, string? ticker, string assetType, decimal quantity, decimal averagePrice, decimal currentPrice, string riskLevel, bool isActive, string? indexerType = null, decimal? indexerRate = null, decimal? indexerAdditionalRate = null, bool isWatchlist = false)
+    public void Update(string name, string? ticker, string assetType, decimal quantity, decimal averagePrice, decimal currentPrice, string riskLevel, bool isActive, string? indexerType = null, decimal? indexerRate = null, decimal? indexerAdditionalRate = null, bool isWatchlist = false, Guid? accountId = null, DateOnly? purchaseDate = null, bool isPinned = false)
     {
         Name = name;
         Ticker = ticker;
@@ -61,6 +67,9 @@ public sealed class Investment : BaseEntity
         IndexerRate = indexerRate;
         IndexerAdditionalRate = indexerAdditionalRate;
         IsWatchlist = isWatchlist;
+        AccountId = accountId;
+        PurchaseDate = purchaseDate;
+        IsPinned = isPinned;
         Touch();
     }
 
@@ -80,6 +89,18 @@ public sealed class Investment : BaseEntity
     public void Deactivate()
     {
         IsActive = false;
+        Touch();
+    }
+
+    public void TogglePin()
+    {
+        IsPinned = !IsPinned;
+        Touch();
+    }
+
+    public void SetPinned(bool isPinned)
+    {
+        IsPinned = isPinned;
         Touch();
     }
 }

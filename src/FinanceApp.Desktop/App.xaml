@@ -8,7 +8,6 @@
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
-
             <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
             <converters:HexToBrushConverter x:Key="HexToBrushConverter" />
             <converters:AssetTypeConverter x:Key="AssetTypeConverter" />
@@ -17,15 +16,25 @@
             <converters:TransactionTypeToColorConverter x:Key="TransactionTypeToColorConverter" />
             <converters:TransactionTypeToIconConverter x:Key="TransactionTypeToIconConverter" />
             <converters:TransactionTypeToPrefixConverter x:Key="TransactionTypeToPrefixConverter" />
+            
+            <!-- ═══ Nexus Capital Palette (Deep Dark Black) ═══ -->
+            <Color x:Key="BgPrimary">#050508</Color>
+            <Color x:Key="BgSurface">#0B0B0F</Color>
+            <Color x:Key="BgElevated">#121217</Color>
+            <Color x:Key="BorderSubtle">#1A1A22</Color>
+            <Color x:Key="BorderMuted">#22222C</Color>
+            <Color x:Key="TextPrimary">#E6EDF3</Color>
+            <Color x:Key="TextSecondary">#7B8A9E</Color>
+            
+            <!-- Accents -->
+            <Color x:Key="AccentCyan">#3B82F6</Color>
+            <Color x:Key="AccentViolet">#818CF8</Color>
+            <Color x:Key="AccentEmerald">#10B981</Color>
+            <Color x:Key="AccentRose">#EF4444</Color>
+            <Color x:Key="AccentAmber">#F59E0B</Color>
+            <Color x:Key="AccentSkyBlue">#0EA5E9</Color>
+            <Color x:Key="TextDimmed">#475569</Color>
 
-            <Color x:Key="BgPrimary">#0B1020</Color>
-            <Color x:Key="BgSurface">#12192B</Color>
-            <Color x:Key="BgElevated">#18233A</Color>
-            <Color x:Key="BorderSubtle">#24314E</Color>
-            <Color x:Key="TextPrimary">#F2F5FB</Color>
-            <Color x:Key="TextSecondary">#AAB6CF</Color>
-            <Color x:Key="AccentCyan">#28D7FF</Color>
-            <Color x:Key="AccentViolet">#7C5CFF</Color>
             <SolidColorBrush x:Key="BgPrimaryBrush" Color="{StaticResource BgPrimary}" />
             <SolidColorBrush x:Key="BgSurfaceBrush" Color="{StaticResource BgSurface}" />
             <SolidColorBrush x:Key="BgElevatedBrush" Color="{StaticResource BgElevated}" />
@@ -34,12 +43,41 @@
             <SolidColorBrush x:Key="AccentCyanBrush" Color="{StaticResource AccentCyan}" />
             <SolidColorBrush x:Key="AccentVioletBrush" Color="{StaticResource AccentViolet}" />
             <SolidColorBrush x:Key="BorderSubtleBrush" Color="{StaticResource BorderSubtle}" />
+            <SolidColorBrush x:Key="BorderMutedBrush" Color="{StaticResource BorderMuted}" />
+            <SolidColorBrush x:Key="AccentEmeraldBrush" Color="{StaticResource AccentEmerald}" />
+            <SolidColorBrush x:Key="AccentRoseBrush" Color="{StaticResource AccentRose}" />
+            <SolidColorBrush x:Key="AccentAmberBrush" Color="{StaticResource AccentAmber}" />
+            <SolidColorBrush x:Key="AccentSkyBlueBrush" Color="{StaticResource AccentSkyBlue}" />
+            <SolidColorBrush x:Key="TextDimmedBrush" Color="{StaticResource TextDimmed}" />
+
+            <!-- KPI Card Gradient Brushes -->
+            <LinearGradientBrush x:Key="KpiBalanceGradient" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#0C1220" Offset="0" />
+                <GradientStop Color="#0F172A" Offset="1" />
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="KpiProjectedGradient" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#0C1A2A" Offset="0" />
+                <GradientStop Color="#0A1628" Offset="1" />
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="KpiIncomeGradient" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#071A14" Offset="0" />
+                <GradientStop Color="#0A1F18" Offset="1" />
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="KpiExpenseGradient" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#1A0A14" Offset="0" />
+                <GradientStop Color="#1F0C18" Offset="1" />
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="KpiInvestedGradient" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#1A1408" Offset="0" />
+                <GradientStop Color="#1F180A" Offset="1" />
+            </LinearGradientBrush>
+
             <Style x:Key="RecurringFlyoutStyle" TargetType="FlyoutPresenter">
                 <Setter Property="Background" Value="{StaticResource BgElevatedBrush}" />
                 <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="Padding" Value="16" />
-                <Setter Property="CornerRadius" Value="12" />
+                <Setter Property="CornerRadius" Value="6" />
             </Style>
         </ResourceDictionary>
     </Application.Resources>

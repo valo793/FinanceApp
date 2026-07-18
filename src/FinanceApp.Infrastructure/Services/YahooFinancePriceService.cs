@@ -13,52 +13,93 @@ namespace FinanceApp.Infrastructure.Services;
 
 public sealed class YahooFinancePriceService(HttpClient httpClient) : IAssetPriceService
 {
+    private static string NormalizeTicker(string ticker)
+    {
+        if (string.IsNullOrWhiteSpace(ticker)) return string.Empty;
+        var clean = ticker.Trim().ToUpperInvariant();
+        
+        if (clean.Contains(".")) return clean;
+
+        if (System.Text.RegularExpressions.Regex.IsMatch(clean, @"^[A-Z]{4}[0-9]{1,2}F?$"))
+        {
+            return clean + ".SA";
+        }
+        
+        return clean;
+    }
+
     public async Task<Dictionary<string, decimal>> GetPricesAsync(IEnumerable<string> tickers, CancellationToken cancellationToken)
     {
         var result = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
-        var tickerList = tickers.Where(t => !string.IsNullOrWhiteSpace(t)).Select(t => t.Trim()).Distinct().ToList();
+        if (tickers == null) return result;
 
-        if (tickerList.Count == 0) return result;
+        var originalTickers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var t in tickers)
+        {
+            if (string.IsNullOrWhiteSpace(t)) continue;
+            var normalized = NormalizeTicker(t);
+            originalTickers[normalized] = t.Trim();
+        }
 
-        var symbols = string.Join(",", tickerList);
-        var url = $"https://query1.finance2.yahoo.com/v7/finance/quote?symbols={Uri.EscapeDataString(symbols)}";
+        if (originalTickers.Count == 0) return result;
 
+        // Fetch prices in parallel using the chart endpoint
+        var tasks = originalTickers.Keys.Select(async normalizedTicker =>
+        {
+            var price = await GetSinglePriceAsync(normalizedTicker, cancellationToken);
+            return (normalizedTicker, price);
+        });
+
+        var taskResults = await Task.WhenAll(tasks);
+        foreach (var (normalizedTicker, price) in taskResults)
+        {
+            if (price.HasValue)
+            {
+                if (originalTickers.TryGetValue(normalizedTicker, out var originalTicker))
+                {
+                    result[originalTicker] = price.Value;
+                }
+                else
+                {
+                    result[normalizedTicker] = price.Value;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private async Task<decimal?> GetSinglePriceAsync(string ticker, CancellationToken cancellationToken)
+    {
+        var url = $"https://query1.finance.yahoo.com/v8/finance/chart/{Uri.EscapeDataString(ticker)}?interval=1d&range=1d";
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
 
             var response = await httpClient.SendAsync(request, cancellationToken);
-            if (!response.IsSuccessStatusCode)
-            {
-                return result;
-            }
+            if (!response.IsSuccessStatusCode) return null;
 
-            var data = await response.Content.ReadFromJsonAsync<YahooQuoteResponse>(cancellationToken: cancellationToken);
-            if (data?.QuoteResponse?.Result != null)
+            var data = await response.Content.ReadFromJsonAsync<YahooChartResponse>(cancellationToken: cancellationToken);
+            var meta = data?.Chart?.Result?.FirstOrDefault()?.Meta;
+            if (meta != null)
             {
-                foreach (var item in data.QuoteResponse.Result)
-                {
-                    if (item.Symbol != null)
-                    {
-                        result[item.Symbol] = (decimal)item.RegularMarketPrice;
-                    }
-                }
+                return (decimal)meta.RegularMarketPrice;
             }
         }
         catch
         {
             // Fail silently
         }
-
-        return result;
+        return null;
     }
 
     public async Task<TickerValidationResultDto?> ValidateTickerAsync(string ticker, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(ticker)) return new TickerValidationResultDto { IsValid = false };
+        var normalized = NormalizeTicker(ticker);
+        if (string.IsNullOrWhiteSpace(normalized)) return new TickerValidationResultDto { IsValid = false };
 
-        var url = $"https://query1.finance2.yahoo.com/v7/finance/quote?symbols={Uri.EscapeDataString(ticker.Trim().ToUpper())}";
+        var url = $"https://query1.finance.yahoo.com/v8/finance/chart/{Uri.EscapeDataString(normalized)}?interval=1d&range=1d";
 
         try
         {
@@ -71,12 +112,12 @@ public sealed class YahooFinancePriceService(HttpClient httpClient) : IAssetPric
                 return new TickerValidationResultDto { IsValid = false };
             }
 
-            var data = await response.Content.ReadFromJsonAsync<YahooValidateResponse>(cancellationToken: cancellationToken);
-            var item = data?.QuoteResponse?.Result?.FirstOrDefault();
-            if (item != null)
+            var data = await response.Content.ReadFromJsonAsync<YahooChartResponse>(cancellationToken: cancellationToken);
+            var meta = data?.Chart?.Result?.FirstOrDefault()?.Meta;
+            if (meta != null)
             {
                 var mappedType = "stock";
-                var quoteType = item.QuoteType?.ToUpperInvariant() ?? "EQUITY";
+                var quoteType = meta.InstrumentType?.ToUpperInvariant() ?? "EQUITY";
                 if (quoteType == "MUTUALFUND" || quoteType == "ETF")
                 {
                     mappedType = "fund";
@@ -86,8 +127,7 @@ public sealed class YahooFinancePriceService(HttpClient httpClient) : IAssetPric
                     mappedType = "crypto";
                 }
 
-                var cleanedTicker = ticker.Trim().ToUpperInvariant();
-                if (cleanedTicker.EndsWith("11.SA") || cleanedTicker.EndsWith("11"))
+                if (normalized.EndsWith("11.SA") || normalized.EndsWith("11"))
                 {
                     mappedType = "fii";
                 }
@@ -95,9 +135,9 @@ public sealed class YahooFinancePriceService(HttpClient httpClient) : IAssetPric
                 return new TickerValidationResultDto
                 {
                     IsValid = true,
-                    Name = item.LongName ?? item.ShortName ?? item.Symbol,
-                    CurrentPrice = (decimal)item.RegularMarketPrice,
-                    CurrencyCode = item.Currency ?? "BRL",
+                    Name = meta.LongName ?? meta.ShortName ?? meta.Symbol,
+                    CurrentPrice = (decimal)meta.RegularMarketPrice,
+                    CurrencyCode = meta.Currency ?? "BRL",
                     AssetType = mappedType
                 };
             }
@@ -121,7 +161,8 @@ public sealed class YahooFinancePriceService(HttpClient httpClient) : IAssetPric
         var period1 = fromDateTime.ToUnixTimeSeconds();
         var period2 = toDateTime.ToUnixTimeSeconds();
 
-        var url = $"https://query1.finance2.yahoo.com/v8/finance/chart/{Uri.EscapeDataString(ticker.Trim().ToUpper())}?period1={period1}&period2={period2}&interval=1d";
+        var normalized = NormalizeTicker(ticker);
+        var url = $"https://query1.finance.yahoo.com/v8/finance/chart/{Uri.EscapeDataString(normalized)}?period1={period1}&period2={period2}&interval=1d";
 
         try
         {
@@ -171,7 +212,8 @@ public sealed class YahooFinancePriceService(HttpClient httpClient) : IAssetPric
         var period1 = fromDateTime.ToUnixTimeSeconds();
         var period2 = toDateTime.ToUnixTimeSeconds();
 
-        var url = $"https://query1.finance2.yahoo.com/v8/finance/chart/{Uri.EscapeDataString(ticker.Trim().ToUpper())}?period1={period1}&period2={period2}&interval=1d";
+        var normalized = NormalizeTicker(ticker);
+        var url = $"https://query1.finance.yahoo.com/v8/finance/chart/{Uri.EscapeDataString(normalized)}?period1={period1}&period2={period2}&interval=1d";
 
         try
         {
@@ -228,60 +270,6 @@ public sealed class YahooFinancePriceService(HttpClient httpClient) : IAssetPric
         return result;
     }
 
-    private sealed class YahooQuoteResponse
-    {
-        [JsonPropertyName("quoteResponse")]
-        public YahooQuoteResultWrapper? QuoteResponse { get; set; }
-    }
-
-    private sealed class YahooQuoteResultWrapper
-    {
-        [JsonPropertyName("result")]
-        public List<YahooQuoteItem>? Result { get; set; }
-    }
-
-    private sealed class YahooQuoteItem
-    {
-        [JsonPropertyName("symbol")]
-        public string? Symbol { get; set; }
-
-        [JsonPropertyName("regularMarketPrice")]
-        public double RegularMarketPrice { get; set; }
-    }
-
-    private sealed class YahooValidateResponse
-    {
-        [JsonPropertyName("quoteResponse")]
-        public YahooValidateResultWrapper? QuoteResponse { get; set; }
-    }
-
-    private sealed class YahooValidateResultWrapper
-    {
-        [JsonPropertyName("result")]
-        public List<YahooValidateItem>? Result { get; set; }
-    }
-
-    private sealed class YahooValidateItem
-    {
-        [JsonPropertyName("symbol")]
-        public string? Symbol { get; set; }
-
-        [JsonPropertyName("regularMarketPrice")]
-        public double RegularMarketPrice { get; set; }
-
-        [JsonPropertyName("longName")]
-        public string? LongName { get; set; }
-
-        [JsonPropertyName("shortName")]
-        public string? ShortName { get; set; }
-
-        [JsonPropertyName("currency")]
-        public string? Currency { get; set; }
-
-        [JsonPropertyName("quoteType")]
-        public string? QuoteType { get; set; }
-    }
-
     private sealed class YahooChartResponse
     {
         [JsonPropertyName("chart")]
@@ -296,11 +284,35 @@ public sealed class YahooFinancePriceService(HttpClient httpClient) : IAssetPric
 
     private sealed class YahooChartResultItem
     {
+        [JsonPropertyName("meta")]
+        public YahooChartMeta? Meta { get; set; }
+
         [JsonPropertyName("timestamp")]
         public List<long>? Timestamp { get; set; }
 
         [JsonPropertyName("indicators")]
         public YahooChartIndicators? Indicators { get; set; }
+    }
+
+    private sealed class YahooChartMeta
+    {
+        [JsonPropertyName("regularMarketPrice")]
+        public double RegularMarketPrice { get; set; }
+
+        [JsonPropertyName("currency")]
+        public string? Currency { get; set; }
+
+        [JsonPropertyName("symbol")]
+        public string? Symbol { get; set; }
+
+        [JsonPropertyName("instrumentType")]
+        public string? InstrumentType { get; set; }
+
+        [JsonPropertyName("longName")]
+        public string? LongName { get; set; }
+
+        [JsonPropertyName("shortName")]
+        public string? ShortName { get; set; }
     }
 
     private sealed class YahooChartIndicators

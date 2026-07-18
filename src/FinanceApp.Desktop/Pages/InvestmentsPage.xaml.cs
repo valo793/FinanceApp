@@ -18,7 +18,27 @@ public sealed partial class InvestmentsPage : Page
     {
         ViewModel = App.Host.Services.GetRequiredService<InvestmentsViewModel>();
         InitializeComponent();
-        Loaded += async (_, _) => await ViewModel.LoadCommand.ExecuteAsync(null);
+        Loaded += async (_, _) => 
+        {
+            await ViewModel.LoadCommand.ExecuteAsync(null);
+            ViewModel.LoadRebalanceData();
+        };
+    }
+
+    private void AssetsContainer_SizeChanged(object sender, Microsoft.UI.Xaml.SizeChangedEventArgs e)
+    {
+        if (sender is Border border && border.ActualWidth > 100)
+        {
+            double availableWidth = border.ActualWidth - 40; // account for 20px padding on each side
+            int targetColumns = (int)Math.Max(1, Math.Floor(availableWidth / 380.0));
+            double itemWidth = Math.Floor((availableWidth - (targetColumns * 8)) / targetColumns);
+
+            if (AssetsGridView.ItemsPanelRoot is ItemsWrapGrid wrapGrid)
+            {
+                wrapGrid.ItemWidth = itemWidth;
+                wrapGrid.ItemHeight = 280;
+            }
+        }
     }
 
     private async void AddInvestment_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
@@ -60,6 +80,7 @@ public sealed partial class InvestmentsPage : Page
     {
         if (PortfolioPivot == null || ViewModel == null) return;
         ViewModel.IsWatchlistMode = PortfolioPivot.SelectedIndex == 1;
+        ViewModel.IsRebalanceMode = PortfolioPivot.SelectedIndex == 2;
     }
 
     private void BentoCard_EditClicked(object sender, InvestmentDto existing)

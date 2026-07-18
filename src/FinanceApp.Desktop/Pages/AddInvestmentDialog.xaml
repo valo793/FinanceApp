@@ -69,6 +69,21 @@
         <NumberBox x:Name="CurrentPriceInput" Header="Preço Atual (R$) *" Value="0.00" SmallChange="0.1" LargeChange="1.0"
                    ToolTipService.ToolTip="Cotação atual do ativo. Para ativos com ticker, este valor é atualizado automaticamente a cada 4 horas." />
 
+        <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <ComboBox x:Name="AccountInput" Grid.Column="0" Header="Conta *" HorizontalAlignment="Stretch"
+                      DisplayMemberPath="Name" SelectedValuePath="Id"
+                      ToolTipService.ToolTip="A conta vinculada a este investimento." />
+            
+            <CalendarDatePicker x:Name="PurchaseDateInput" Grid.Column="1" Header="Data de Compra" HorizontalAlignment="Stretch"
+                                PlaceholderText="Selecione"
+                                ToolTipService.ToolTip="A data em que o investimento foi realizado." />
+        </Grid>
+
         <CheckBox x:Name="IsWatchlistInput" Content="Adicionar à Watchlist (Acompanhamento)" Margin="0,4,0,4"
                   ToolTipService.ToolTip="Se marcado, este ativo servirá apenas para monitoramento e não fará parte dos cálculos gerais de saldo e rentabilidade de sua carteira." />
 

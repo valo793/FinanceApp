@@ -23,6 +23,9 @@ public sealed partial class MainWindow : Window
         var infoBarService = App.Host.Services.GetRequiredService<InfoBarService>();
         infoBarService.Register(GlobalInfoBar);
 
+        // Restore Window Display Mode
+        _ = RestoreWindowModeAsync();
+
         // Start with login page, hide nav
         NavView.IsPaneVisible = false;
         RootFrame.Navigate(typeof(LoginPage));
@@ -40,6 +43,41 @@ public sealed partial class MainWindow : Window
 
         // Try to restore a saved session (auto-login)
         _ = TryRestoreSessionAsync();
+    }
+
+    public async Task RestoreWindowModeAsync()
+    {
+        var sessionStorage = App.Host.Services.GetRequiredService<SessionStorage>();
+        var mode = await sessionStorage.LoadWindowStateAsync();
+        ApplyWindowMode(mode);
+    }
+
+    public void ApplyWindowMode(string mode)
+    {
+        var appWindow = this.AppWindow;
+        if (appWindow == null) return;
+
+        switch (mode.ToLower())
+        {
+            case "fullscreen":
+                appWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
+                break;
+            case "maximized":
+                appWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
+                if (appWindow.Presenter is OverlappedPresenter opMax)
+                {
+                    opMax.Maximize();
+                }
+                break;
+            case "windowed":
+            default:
+                appWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
+                if (appWindow.Presenter is OverlappedPresenter opWin)
+                {
+                    opWin.Restore();
+                }
+                break;
+        }
     }
 
     private async Task TryRestoreSessionAsync()

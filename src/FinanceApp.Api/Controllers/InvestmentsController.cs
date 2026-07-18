@@ -69,11 +69,28 @@ public sealed class InvestmentsController(IInvestmentService investmentService, 
         return NoContent();
     }
 
+    [HttpPut("{id:guid}/pin")]
+    public async Task<IActionResult> TogglePin(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await investmentService.TogglePinAsync(currentUser.UserId, id, cancellationToken);
+        await auditService.WriteAsync(currentUser.UserId, "investment.pin", "investment", id, "success", "info", new { result.Name, result.IsPinned }, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpPost("sync")]
     public async Task<IActionResult> Sync(CancellationToken cancellationToken)
     {
         await investmentService.SyncPricesAsync(currentUser.UserId, cancellationToken);
         await auditService.WriteAsync(currentUser.UserId, "investment.sync", "user", currentUser.UserId, "success", "info", new { }, cancellationToken);
         return Ok();
+    }
+
+    [HttpGet("benchmark/{ticker}")]
+    public async Task<IActionResult> GetBenchmarkCandlesticks(string ticker, [FromQuery] DateOnly? from, [FromQuery] DateOnly? to, CancellationToken cancellationToken)
+    {
+        var periodFrom = from ?? DateOnly.FromDateTime(DateTime.Today.AddDays(-30));
+        var periodTo = to ?? DateOnly.FromDateTime(DateTime.Today);
+        var data = await priceService.GetHistoricalCandlesticksAsync(ticker, periodFrom, periodTo, cancellationToken);
+        return Ok(data);
     }
 }

@@ -21,7 +21,7 @@ public sealed partial class SettingsPage : Page
             await ViewModel.LoadCommand.ExecuteAsync(null);
             
             SelectComboBoxTag(ThemeInput, ViewModel.Theme);
-            SelectComboBoxTag(DensityInput, ViewModel.Density);
+            SelectComboBoxTag(WindowModeInput, ViewModel.WindowMode);
             SelectComboBoxTag(PeriodInput, ViewModel.DefaultDashboardPeriod);
 
             if (this.XamlRoot?.Content is FrameworkElement root)
@@ -47,7 +47,7 @@ public sealed partial class SettingsPage : Page
     private async void SaveSettings_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
         ViewModel.Theme = (ThemeInput.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "dark";
-        ViewModel.Density = (DensityInput.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "comfortable";
+        ViewModel.WindowMode = (WindowModeInput.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "windowed";
         ViewModel.DefaultDashboardPeriod = (PeriodInput.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "current_month";
 
         await ViewModel.SaveCommand.ExecuteAsync(null);

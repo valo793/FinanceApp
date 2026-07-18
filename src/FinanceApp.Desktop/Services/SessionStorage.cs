@@ -45,4 +45,30 @@ public sealed class SessionStorage
         if (File.Exists(FilePath))
             File.Delete(FilePath);
     }
+
+    private static readonly string WindowStatePath = Path.Combine(StorageDir, "windowstate.txt");
+
+    public async Task SaveWindowStateAsync(string mode)
+    {
+        try
+        {
+            Directory.CreateDirectory(StorageDir);
+            await File.WriteAllTextAsync(WindowStatePath, mode);
+        }
+        catch { }
+    }
+
+    public async Task<string> LoadWindowStateAsync()
+    {
+        try
+        {
+            if (File.Exists(WindowStatePath))
+            {
+                var text = (await File.ReadAllTextAsync(WindowStatePath)).Trim();
+                if (!string.IsNullOrWhiteSpace(text)) return text;
+            }
+        }
+        catch { }
+        return "windowed"; // default
+    }
 }

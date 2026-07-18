@@ -6,6 +6,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:inv="using:FinanceApp.Contracts.Investments"
     xmlns:controls="using:FinanceApp.Desktop.Controls"
+    xmlns:vm="using:FinanceApp.Desktop.ViewModels"
     mc:Ignorable="d">
 
     <ScrollViewer Background="{StaticResource BgPrimaryBrush}">
@@ -62,7 +63,9 @@
             <ProgressBar IsIndeterminate="True"
                          Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay}"
                          Background="Transparent"
-                         Foreground="{StaticResource AccentCyanBrush}" />            <!-- Tab Pivot Control -->
+                         Foreground="{StaticResource AccentCyanBrush}" />
+
+            <!-- Tab Pivot Control -->
             <Pivot x:Name="PortfolioPivot" SelectionChanged="PortfolioPivot_SelectionChanged" Margin="0,0,0,0">
                 <PivotItem Header="Carteira Real" />
                 <PivotItem Header="Watchlist (Acompanhamento)" />
@@ -103,38 +106,58 @@
 
             <!-- Evolution Chart Section -->
             <Border Padding="20" CornerRadius="16" Background="{StaticResource BgSurfaceBrush}">
-                <StackPanel Spacing="12">
+                <StackPanel Spacing="16">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         
                         <TextBlock Grid.Column="0" Text="{x:Bind ViewModel.ChartTitle, Mode=OneWay}" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" />
                         
-                        <!-- Interactive Filters -->
-                        <ComboBox Grid.Column="1" 
-                                  Header="Categoria"
-                                  ItemsSource="{x:Bind ViewModel.Categories}" 
-                                  SelectedItem="{x:Bind ViewModel.SelectedCategory, Mode=TwoWay}"
-                                  Width="140"
-                                  Margin="0,0,12,0"
-                                  VerticalAlignment="Center"/>
+                        <!-- Interactive Controls & Filters -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <!-- Chart Type Toggle (Linha vs Velas) -->
+                            <ToggleSwitch Header="Modo Velas" 
+                                          IsOn="{x:Bind ViewModel.PreferCandlestick, Mode=TwoWay}"
+                                          OffContent="Linha" OnContent="Velas" 
+                                          Margin="0,0,8,0" VerticalAlignment="Center" />
 
-                        <ComboBox Grid.Column="2" 
-                                  Header="Ativo"
-                                  ItemsSource="{x:Bind ViewModel.FilterInvestments}" 
-                                  SelectedItem="{x:Bind ViewModel.SelectedFilterInvestment, Mode=TwoWay}"
-                                  DisplayMemberPath="Name"
-                                  Width="180"
-                                  Margin="0,0,12,0"
-                                  VerticalAlignment="Center"/>
+                            <!-- Period Range Filter (1M, 6M, 1Y, 5Y) -->
+                            <ComboBox Header="Período"
+                                      SelectedItem="{x:Bind ViewModel.SelectedRange, Mode=TwoWay}"
+                                      Width="85"
+                                      VerticalAlignment="Center">
+                                <x:String>1M</x:String>
+                                <x:String>6M</x:String>
+                                <x:String>1Y</x:String>
+                                <x:String>5Y</x:String>
+                            </ComboBox>
 
-                        <Button Grid.Column="3" 
+                            <!-- Grouping Filter (Dia, Semana, Mês, etc) -->
+                            <ComboBox Header="Agrupar"
+                                      SelectedItem="{x:Bind ViewModel.SelectedDrill, Mode=TwoWay}"
+                                      Width="105"
+                                      VerticalAlignment="Center">
+                                <x:String>Dia</x:String>
+                                <x:String>Semana</x:String>
+                                <x:String>Mês</x:String>
+                                <x:String>Trimestre</x:String>
+                                <x:String>Ano</x:String>
+                            </ComboBox>
+
+                            <!-- Category Filter -->
+                            <ComboBox Header="Categoria"
+                                      ItemsSource="{x:Bind ViewModel.Categories}" 
+                                      SelectedItem="{x:Bind ViewModel.SelectedCategory, Mode=TwoWay}"
+                                      Width="120"
+                                      VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <Button Grid.Column="2" 
                                 Content="Limpar Seleção" 
-                                Visibility="{x:Bind ViewModel.ShowCandlestickChart, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                Visibility="{x:Bind ViewModel.HasSelectedAsset, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
                                 Click="ClearSelection_Click"
                                 Background="Transparent"
                                 BorderBrush="{StaticResource BorderSubtleBrush}"
@@ -143,34 +166,138 @@
                                 Padding="8,4"
                                 CornerRadius="4"
                                 FontSize="12"
+                                Margin="12,0,0,0"
                                 VerticalAlignment="Bottom"/>
                     </Grid>
                     
                     <controls:LineChart ItemsSource="{x:Bind ViewModel.HistoryPoints, Mode=OneWay}" 
+                                        LineColor="{x:Bind ViewModel.TrendColor, Mode=OneWay}"
                                         Visibility="{x:Bind ViewModel.ShowCandlestickChart, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}" 
-                                        Height="220" />
+                                        Height="380" />
 
                     <controls:CandlestickChart ItemsSource="{x:Bind ViewModel.CandlestickPoints, Mode=OneWay}" 
-                                              Visibility="{x:Bind ViewModel.ShowCandlestickChart, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" 
-                                              Height="220" />
+                                               Visibility="{x:Bind ViewModel.ShowCandlestickChart, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" 
+                                               Height="380" />
                 </StackPanel>
             </Border>
 
-            <!-- Bento Grid of Assets -->
-            <Border Padding="20" CornerRadius="16" Background="{StaticResource BgSurfaceBrush}">
+            <!-- Responsive Fluid Grid of Assets (Dynamic Columns Calculation) -->
+            <Border Padding="20" CornerRadius="16" Background="{StaticResource BgSurfaceBrush}" SizeChanged="AssetsContainer_SizeChanged">
                 <StackPanel Spacing="16">
                     <TextBlock Text="Meus Ativos" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" />
 
-                    <GridView ItemsSource="{x:Bind ViewModel.Investments, Mode=OneWay}"
+                    <GridView x:Name="AssetsGridView"
+                              ItemsSource="{x:Bind ViewModel.Investments, Mode=OneWay}"
                               SelectionMode="None"
                               Padding="0"
                               HorizontalAlignment="Stretch">
+                        <GridView.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <ItemsWrapGrid x:Name="AssetsWrapGrid" Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </GridView.ItemsPanel>
+                        <GridView.ItemContainerStyle>
+                            <Style TargetType="GridViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="VerticalContentAlignment" Value="Stretch" />
+                                <Setter Property="Margin" Value="4" />
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="MinWidth" Value="0" />
+                            </Style>
+                        </GridView.ItemContainerStyle>
                         <GridView.ItemTemplate>
                             <DataTemplate x:DataType="inv:InvestmentDto">
-                                <controls:AssetBentoCard Investment="{x:Bind}" />
+                                <controls:AssetBentoCard Investment="{x:Bind}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
                             </DataTemplate>
                         </GridView.ItemTemplate>
                     </GridView>
+                </StackPanel>
+            </Border>
+
+            <!-- Balanço & Rebalanceamento de Carteira Section (Integrated) -->
+            <Border Padding="20" CornerRadius="16" Background="{StaticResource BgSurfaceBrush}" 
+                    Visibility="{x:Bind ViewModel.IsWatchlistMode, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Balanço &amp; Rebalanceamento Recomendado" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" />
+
+                    <!-- Allocation Progress Bar with Labels -->
+                    <StackPanel Spacing="8">
+                        <Grid ColumnSpacing="4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="{x:Bind ViewModel.RendaFixaWidth, Mode=OneWay}" />
+                                <ColumnDefinition Width="{x:Bind ViewModel.AcoesBrWidth, Mode=OneWay}" />
+                                <ColumnDefinition Width="{x:Bind ViewModel.AcoesEuaWidth, Mode=OneWay}" />
+                                <ColumnDefinition Width="{x:Bind ViewModel.FiisWidth, Mode=OneWay}" />
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Column="0" Height="10" CornerRadius="4,0,0,4" Background="{StaticResource AccentCyanBrush}" ToolTipService.ToolTip="Renda Fixa" />
+                            <Border Grid.Column="1" Height="10" Background="{StaticResource AccentEmeraldBrush}" ToolTipService.ToolTip="Ações BR" />
+                            <Border Grid.Column="2" Height="10" Background="{StaticResource AccentVioletBrush}" ToolTipService.ToolTip="Ações EUA" />
+                            <Border Grid.Column="3" Height="10" CornerRadius="0,4,4,0" Background="{StaticResource AccentAmberBrush}" ToolTipService.ToolTip="FIIs" />
+                        </Grid>
+
+                        <!-- Color Legend Badges -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,20,0">
+                                <Ellipse Width="10" Height="10" Fill="{StaticResource AccentCyanBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Renda Fixa" FontSize="12" Foreground="{StaticResource TextPrimaryBrush}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,20,0">
+                                <Ellipse Width="10" Height="10" Fill="{StaticResource AccentEmeraldBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Ações BR" FontSize="12" Foreground="{StaticResource TextPrimaryBrush}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,20,0">
+                                <Ellipse Width="10" Height="10" Fill="{StaticResource AccentVioletBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Ações EUA" FontSize="12" Foreground="{StaticResource TextPrimaryBrush}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Ellipse Width="10" Height="10" Fill="{StaticResource AccentAmberBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="FIIs" FontSize="12" Foreground="{StaticResource TextPrimaryBrush}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Rebalance Table Header & Rows -->
+                    <Grid ColumnSpacing="16" Padding="12,8" Background="#1A202C" CornerRadius="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="100" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="CATEGORIA / ATIVO" FontWeight="Bold" FontSize="11" Foreground="#94A3B8" />
+                        <TextBlock Grid.Column="1" Text="ATUAL (R$ / %)" FontWeight="Bold" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="2" Text="META ALVO" FontWeight="Bold" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="3" Text="DIFERENÇA" FontWeight="Bold" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="4" Text="RECOMENDAÇÃO" FontWeight="Bold" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Center" />
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{x:Bind ViewModel.RebalanceItems, Mode=OneWay}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:RebalanceItem">
+                                <Grid ColumnSpacing="16" Padding="12,10" BorderBrush="#2D3748" BorderThickness="0,0,0,1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="100" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{x:Bind CategoryName}" FontWeight="Bold" FontSize="14" Foreground="White" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind CurrentValueText}" FontSize="13" FontWeight="SemiBold" Foreground="White" HorizontalAlignment="Right" />
+                                        <TextBlock Text="{x:Bind CurrentPercentageText}" FontSize="11" Foreground="#A0AEC0" HorizontalAlignment="Right" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="2" Text="{x:Bind TargetPercentageText}" FontSize="13" FontWeight="SemiBold" Foreground="#E2E8F0" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="3" Text="{x:Bind DifferenceText}" FontSize="13" FontWeight="Bold" Foreground="{x:Bind DifferenceBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                    <Border Grid.Column="4" Background="{x:Bind ActionBadgeBrush}" Padding="8,4" CornerRadius="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind ActionText}" FontSize="11" FontWeight="Bold" Foreground="White" />
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
             </Border>
 

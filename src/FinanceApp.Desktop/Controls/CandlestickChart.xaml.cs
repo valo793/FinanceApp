@@ -89,10 +89,10 @@ public sealed partial class CandlestickChart : UserControl
 
         if (width <= 0 || height <= 0) return;
 
-        double topPadding = 20;
-        double bottomPadding = 25;
-        double leftPadding = 50;
-        double rightPadding = 20;
+        double topPadding = 12;
+        double bottomPadding = 22;
+        double leftPadding = 45;
+        double rightPadding = 25;
 
         double drawWidth = width - leftPadding - rightPadding;
         double drawHeight = height - topPadding - bottomPadding;
@@ -117,15 +117,16 @@ public sealed partial class CandlestickChart : UserControl
             priceRange = maxPrice - minPrice;
         }
 
-        // Draw Y-axis grid lines and labels (3 lines)
-        var gridStroke = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255));
+        // Grid lines (Y-axis)
+        int gridLineCount = 4;
+        var gridStroke = new SolidColorBrush(Color.FromArgb(25, 255, 255, 255));
         var labelBrush = new SolidColorBrush(Color.FromArgb(150, 255, 255, 255));
 
-        for (int i = 0; i <= 3; i++)
+        for (int i = 0; i <= gridLineCount; i++)
         {
-            double ratio = i / 3.0;
-            double y = topPadding + (1 - ratio) * drawHeight;
-            double val = minPrice + ratio * priceRange;
+            double ratio = (double)i / gridLineCount;
+            double y = topPadding + (drawHeight * (1.0 - ratio));
+            double val = minPrice + (priceRange * ratio);
 
             // Line
             var line = new Line
@@ -139,15 +140,25 @@ public sealed partial class CandlestickChart : UserControl
             };
             GridLinesCanvas.Children.Add(line);
 
-            // Label
+            // Smart Y-Axis Label
+            string formattedY;
+            if (val >= 1_000_000)
+                formattedY = $"R$ {val / 1_000_000:N1}M";
+            else if (val >= 10_000)
+                formattedY = $"R$ {val / 1_000:N0}k";
+            else
+                formattedY = $"R$ {val:N0}";
+
             var text = new TextBlock
             {
-                Text = val.ToString("F2"),
-                FontSize = 10,
-                Foreground = labelBrush
+                Text = formattedY,
+                FontSize = 9,
+                Foreground = labelBrush,
+                Width = leftPadding - 6,
+                TextAlignment = TextAlignment.Right
             };
-            Canvas.SetLeft(text, 5);
-            Canvas.SetTop(text, y - 8);
+            Canvas.SetLeft(text, 0);
+            Canvas.SetTop(text, y - 6);
             GridLinesCanvas.Children.Add(text);
         }
 
@@ -163,17 +174,18 @@ public sealed partial class CandlestickChart : UserControl
         };
         GridLinesCanvas.Children.Add(xAxis);
 
-        // Draw candles
-        double candleWidth = Math.Clamp((drawWidth / _points.Count) * 0.65, 3.0, 20.0);
-        double spacing = drawWidth / (_points.Count > 1 ? _points.Count - 1 : 1);
+        // Draw candles (with inner margin so edge candles stay inside bounds)
+        double step = drawWidth / (_points.Count > 0 ? _points.Count : 1);
+        double candleWidth = Math.Clamp(step * 0.60, 3.0, 35.0);
+        double halfWidth = candleWidth / 2.0;
 
-        var greenBrush = new SolidColorBrush(Color.FromArgb(255, 34, 197, 94));  // Success/Green
-        var redBrush = new SolidColorBrush(Color.FromArgb(255, 239, 68, 68));    // Error/Red
+        var greenBrush = new SolidColorBrush(Color.FromArgb(255, 5, 150, 105));  // Success/Emerald
+        var redBrush = new SolidColorBrush(Color.FromArgb(255, 225, 29, 72));    // Error/Rose
 
         for (int i = 0; i < _points.Count; i++)
         {
             var p = _points[i];
-            double x = leftPadding + (i * spacing);
+            double x = leftPadding + (i + 0.5) * step;
 
             double yOpen = topPadding + drawHeight * (1.0 - (p.Open - minPrice) / priceRange);
             double yClose = topPadding + drawHeight * (1.0 - (p.Close - minPrice) / priceRange);
@@ -226,6 +238,18 @@ public sealed partial class CandlestickChart : UserControl
                 Canvas.SetLeft(xLabel, x - 15);
                 Canvas.SetTop(xLabel, topPadding + drawHeight + 5);
                 GridLinesCanvas.Children.Add(xLabel);
+
+                // Draw vertical gridline
+                var vLine = new Line
+                {
+                    X1 = x,
+                    Y1 = topPadding,
+                    X2 = x,
+                    Y2 = topPadding + drawHeight,
+                    Stroke = gridStroke,
+                    StrokeThickness = 1
+                };
+                GridLinesCanvas.Children.Add(vLine);
             }
         }
     }

@@ -21,6 +21,8 @@ public partial class SettingsViewModel(ApiClient apiClient, InfoBarService infoB
     [ObservableProperty] private string defaultDashboardPeriod = "current_month";
     [ObservableProperty] private bool mfaEnabled;
 
+    [ObservableProperty] private string windowMode = "windowed";
+
     public string MfaButtonText => MfaEnabled ? "Desativar 2FA" : "Ativar 2FA";
 
     partial void OnMfaEnabledChanged(bool value)
@@ -44,6 +46,10 @@ public partial class SettingsViewModel(ApiClient apiClient, InfoBarService infoB
                 ShowValuesOnStart = prefs.ShowValuesOnStart;
                 DefaultDashboardPeriod = prefs.DefaultDashboardPeriod;
             }
+            
+            var sessionStorage = App.Host.Services.GetRequiredService<SessionStorage>();
+            WindowMode = await sessionStorage.LoadWindowStateAsync();
+
             MfaEnabled = apiClient.MfaEnabled;
         }
         catch (Exception ex)
@@ -75,6 +81,15 @@ public partial class SettingsViewModel(ApiClient apiClient, InfoBarService infoB
             };
 
             await apiClient.UpdatePreferencesAsync(request);
+
+            var sessionStorage = App.Host.Services.GetRequiredService<SessionStorage>();
+            await sessionStorage.SaveWindowStateAsync(WindowMode);
+
+            if (App.MainWindow is MainWindow mainWindow)
+            {
+                mainWindow.ApplyWindowMode(WindowMode);
+            }
+
             infoBarService.Success("Configurações salvas com sucesso!");
         }
         catch (ConcurrencyConflictException ex)

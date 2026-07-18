@@ -17,12 +17,12 @@ public sealed partial class DonutChart : UserControl
 
     private static readonly Color[] PredefinedColors =
     [
-        ColorHelper.FromArgb(255, 0, 255, 255),   // Cyan
-        ColorHelper.FromArgb(255, 138, 43, 226),  // Violet
-        ColorHelper.FromArgb(255, 0, 230, 118),   // Emerald
-        ColorHelper.FromArgb(255, 255, 215, 0),   // Amber
-        ColorHelper.FromArgb(255, 255, 87, 34),   // Coral
-        ColorHelper.FromArgb(255, 41, 121, 255)   // Blue
+        ColorHelper.FromArgb(255, 37, 99, 235),   // Blue
+        ColorHelper.FromArgb(255, 99, 102, 241),  // Indigo
+        ColorHelper.FromArgb(255, 5, 150, 105),   // Emerald
+        ColorHelper.FromArgb(255, 217, 119, 6),   // Amber
+        ColorHelper.FromArgb(255, 100, 116, 139),  // Slate
+        ColorHelper.FromArgb(255, 124, 58, 237)   // Violet
     ];
 
     public static readonly DependencyProperty ItemsSourceProperty =
@@ -66,50 +66,50 @@ public sealed partial class DonutChart : UserControl
     {
         DonutCanvas.Children.Clear();
         LegendStack.Children.Clear();
-
+ 
         if (_points == null || _points.Count == 0)
         {
             // Show placeholder empty ring
             var placeholder = new Microsoft.UI.Xaml.Shapes.Ellipse
             {
-                Width = 140,
-                Height = 140,
+                Width = 180,
+                Height = 180,
                 Stroke = new SolidColorBrush(ColorHelper.FromArgb(30, 255, 255, 255)),
-                StrokeThickness = 16
+                StrokeThickness = 22
             };
-            Canvas.SetLeft(placeholder, 20);
-            Canvas.SetTop(placeholder, 20);
+            Canvas.SetLeft(placeholder, 30);
+            Canvas.SetTop(placeholder, 30);
             DonutCanvas.Children.Add(placeholder);
-
+ 
             var noDataText = new TextBlock
             {
                 Text = "Sem dados",
                 FontSize = 12,
                 Foreground = new SolidColorBrush(ColorHelper.FromArgb(150, 255, 255, 255)),
-                Width = 180,
+                Width = 240,
                 TextAlignment = TextAlignment.Center
             };
-            Canvas.SetTop(noDataText, 82);
+            Canvas.SetTop(noDataText, 112);
             DonutCanvas.Children.Add(noDataText);
             return;
         }
-
+ 
         double total = _points.Sum(p => p.Value);
         if (total <= 0) return;
-
-        double center = 90;
-        double radius = 68;
+ 
+        double center = 120;
+        double radius = 90;
         double currentAngle = -90; // Start at top (12 o'clock)
-
+ 
         for (int i = 0; i < _points.Count; i++)
         {
             var pt = _points[i];
             var color = PredefinedColors[i % PredefinedColors.Length];
             var brush = new SolidColorBrush(color);
-
+ 
             double percentage = pt.Value / total;
             double sweepAngle = percentage * 360;
-
+ 
             if (percentage >= 0.999)
             {
                 // Full circle
@@ -118,7 +118,7 @@ public sealed partial class DonutChart : UserControl
                     Width = radius * 2,
                     Height = radius * 2,
                     Stroke = brush,
-                    StrokeThickness = 16
+                    StrokeThickness = 22
                 };
                 Canvas.SetLeft(fullRing, center - radius);
                 Canvas.SetTop(fullRing, center - radius);
@@ -129,13 +129,13 @@ public sealed partial class DonutChart : UserControl
                 // Draw arc segment
                 var pathGeometry = new PathGeometry();
                 var pathFigure = new PathFigure();
-
+ 
                 double startRad = currentAngle * Math.PI / 180;
                 double endRad = (currentAngle + sweepAngle) * Math.PI / 180;
-
+ 
                 Point startPt = new Point(center + radius * Math.Cos(startRad), center + radius * Math.Sin(startRad));
                 Point endPt = new Point(center + radius * Math.Cos(endRad), center + radius * Math.Sin(endRad));
-
+ 
                 pathFigure.StartPoint = startPt;
                 pathFigure.Segments.Add(new ArcSegment
                 {
@@ -144,25 +144,25 @@ public sealed partial class DonutChart : UserControl
                     SweepDirection = SweepDirection.Clockwise,
                     IsLargeArc = sweepAngle > 180
                 });
-
+ 
                 var path = new Microsoft.UI.Xaml.Shapes.Path
                 {
                     Data = pathGeometry,
                     Stroke = brush,
-                    StrokeThickness = 16,
+                    StrokeThickness = 22,
                     StrokeEndLineCap = PenLineCap.Round,
                     StrokeStartLineCap = PenLineCap.Round
                 };
                 pathGeometry.Figures.Add(pathFigure);
                 DonutCanvas.Children.Add(path);
             }
-
+ 
             // Add legend item
             var legendItem = new Grid();
             legendItem.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(14) });
             legendItem.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             legendItem.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
+ 
             var colorIndicator = new Microsoft.UI.Xaml.Shapes.Ellipse
             {
                 Width = 10,
@@ -172,7 +172,7 @@ public sealed partial class DonutChart : UserControl
             };
             Grid.SetColumn(colorIndicator, 0);
             legendItem.Children.Add(colorIndicator);
-
+ 
             var labelText = new TextBlock
             {
                 Text = $"{pt.Label} ({percentage:P0})",
@@ -183,7 +183,7 @@ public sealed partial class DonutChart : UserControl
             };
             Grid.SetColumn(labelText, 1);
             legendItem.Children.Add(labelText);
-
+ 
             var valueText = new TextBlock
             {
                 Text = $"R$ {pt.Value:N2}",
@@ -194,12 +194,12 @@ public sealed partial class DonutChart : UserControl
             };
             Grid.SetColumn(valueText, 2);
             legendItem.Children.Add(valueText);
-
+ 
             LegendStack.Children.Add(legendItem);
-
+ 
             currentAngle += sweepAngle;
         }
-
+ 
         // Add total text in the center of the donut
         var totalLabel = new TextBlock
         {
@@ -207,22 +207,22 @@ public sealed partial class DonutChart : UserControl
             FontSize = 10,
             FontWeight = FontWeights.Bold,
             Foreground = new SolidColorBrush(ColorHelper.FromArgb(120, 255, 255, 255)),
-            Width = 180,
+            Width = 240,
             TextAlignment = TextAlignment.Center
         };
-        Canvas.SetTop(totalLabel, 72);
+        Canvas.SetTop(totalLabel, 98);
         DonutCanvas.Children.Add(totalLabel);
-
+ 
         var totalValue = new TextBlock
         {
             Text = $"R$ {total:N0}",
             FontSize = 14,
             FontWeight = FontWeights.SemiBold,
             Foreground = (Brush)Application.Current.Resources["TextPrimaryBrush"],
-            Width = 180,
+            Width = 240,
             TextAlignment = TextAlignment.Center
         };
-        Canvas.SetTop(totalValue, 88);
+        Canvas.SetTop(totalValue, 118);
         DonutCanvas.Children.Add(totalValue);
     }
 }

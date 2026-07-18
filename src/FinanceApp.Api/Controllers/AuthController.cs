@@ -38,6 +38,69 @@ public sealed class AuthController(
         dbContext.UserProfiles.Add(profile);
         dbContext.UserPreferences.Add(preference);
         await dbContext.SaveChangesAsync(cancellationToken);
+
+        // Seed default checking account
+        var account = new Account(user.Id, "Corretora XP", "checking", "BRL", 50000.00m, true, true);
+        dbContext.Accounts.Add(account);
+
+        // Seed default wallet
+        var wallet = new Wallet(user.Id, "Principal", "investment", "BRL");
+        dbContext.Wallets.Add(wallet);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        // Seed default income and expense categories
+        var catSalario = new IncomeCategory(user.Id, "Salário", "#22C55E", "briefcase", true);
+        var catDividendos = new IncomeCategory(user.Id, "Dividendos", "#3B82F6", "trending-up", true);
+        dbContext.IncomeCategories.AddRange(catSalario, catDividendos);
+
+        var catAlimentacao = new ExpenseCategory(user.Id, "Alimentação", "#EF4444", "shopping-cart", true);
+        var catTransporte = new ExpenseCategory(user.Id, "Transporte", "#F59E0B", "car", true);
+        dbContext.ExpenseCategories.AddRange(catAlimentacao, catTransporte);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        // Seed real investments
+        var invPetr = new Investment(user.Id, wallet.Id, "Petrobras PN", "PETR4", "stock", 100m, 35.00m, 38.72m, "BRL", "moderate", null, null, null, false);
+        var invItub = new Investment(user.Id, wallet.Id, "Itaú Unibanco", "ITUB4", "stock", 200m, 30.00m, 34.18m, "BRL", "moderate", null, null, null, false);
+        var invBtc = new Investment(user.Id, wallet.Id, "Bitcoin", "BTC-BRL", "crypto", 0.05m, 350000.00m, 402150.00m, "BRL", "high", null, null, null, false);
+        
+        // Seed watchlist investments
+        var invVale = new Investment(user.Id, wallet.Id, "Vale ON", "VALE3", "stock", 0m, 0m, 61.05m, "BRL", "moderate", null, null, null, true);
+        var invAapl = new Investment(user.Id, wallet.Id, "Apple Inc.", "AAPL", "stock", 0m, 0m, 228.60m, "BRL", "low", null, null, null, true);
+        
+        dbContext.Investments.AddRange(invPetr, invItub, invBtc, invVale, invAapl);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        // Seed buy transactions
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var tx1 = new Transaction(user.Id, "investment_buy", "Compra PETR4", "confirmed", today.AddDays(-15), null, 3500.00m, "BRL", account.Id, null, null, null, null, null, false, null, "manual", invPetr.Id, 100m, 35.00m);
+        var tx2 = new Transaction(user.Id, "investment_buy", "Compra ITUB4", "confirmed", today.AddDays(-10), null, 6000.00m, "BRL", account.Id, null, null, null, null, null, false, null, "manual", invItub.Id, 200m, 30.00m);
+        var tx3 = new Transaction(user.Id, "investment_buy", "Compra BTC", "confirmed", today.AddDays(-5), null, 17500.00m, "BRL", account.Id, null, null, null, null, null, false, null, "manual", invBtc.Id, 0.05m, 350000.00m);
+        
+        // Seed some simple income/expenses for testing
+        var txIncome = new Transaction(user.Id, "income", "Salário Mensal", "confirmed", today.AddDays(-30), null, 8000.00m, "BRL", account.Id, null, catSalario.Id, null);
+        var txExpense = new Transaction(user.Id, "expense", "Supermercado", "confirmed", today.AddDays(-2), null, 450.00m, "BRL", account.Id, null, null, catAlimentacao.Id);
+        
+        dbContext.Transactions.AddRange(tx1, tx2, tx3, txIncome, txExpense);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        // Adjust account balance (Initial R$ 50000 + R$ 8000 (salary) - R$ 27000 (buys) - R$ 450 (expense) = R$ 30550)
+        account.RecalculateBalance(-3500m - 6000m - 17500m + 8000m - 450m);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        // Seed some BalanceSnapshots and InvestmentSnapshots for line chart history
+        for (int i = 30; i >= 0; i -= 5)
+        {
+            var date = today.AddDays(-i);
+            var balanceSnapshot = new BalanceSnapshot(user.Id, account.Id, 30000.00m + (30 - i) * 100m, date);
+            dbContext.BalanceSnapshots.Add(balanceSnapshot);
+            
+            var snapPetr = new InvestmentSnapshot(user.Id, invPetr.Id, 3500m + (30 - i) * 30m, date);
+            var snapItub = new InvestmentSnapshot(user.Id, invItub.Id, 6000m + (30 - i) * 40m, date);
+            var snapBtc = new InvestmentSnapshot(user.Id, invBtc.Id, 17500m + (30 - i) * 130m, date);
+            dbContext.InvestmentSnapshots.AddRange(snapPetr, snapItub, snapBtc);
+        }
+        await dbContext.SaveChangesAsync(cancellationToken);
+
         await auditService.WriteAsync(user.Id, "auth.register", "user", user.Id, "success", "info", new { request.Email }, cancellationToken);
 
         var tokens = tokenService.IssueTokens(user.Id, user.Email, profile.FullName, "dark", user.MfaEnabled);

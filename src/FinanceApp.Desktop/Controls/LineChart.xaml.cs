@@ -42,6 +42,19 @@ public sealed partial class LineChart : UserControl
         set => SetValue(ItemsSourceProperty, value);
     }
 
+    public static readonly DependencyProperty LineColorProperty =
+        DependencyProperty.Register(
+            nameof(LineColor),
+            typeof(Windows.UI.Color),
+            typeof(LineChart),
+            new PropertyMetadata(Windows.UI.Color.FromArgb(255, 59, 130, 246), (d, e) => (d as LineChart)?.UpdateData()));
+
+    public Windows.UI.Color LineColor
+    {
+        get => (Windows.UI.Color)GetValue(LineColorProperty);
+        set => SetValue(LineColorProperty, value);
+    }
+
     public LineChart()
     {
         InitializeComponent();
@@ -83,11 +96,11 @@ public sealed partial class LineChart : UserControl
 
         if (width <= 0 || height <= 0) return;
 
-        // Reserve padding
-        double topPadding = 20;
-        double bottomPadding = 20;
-        double leftPadding = 50;
-        double rightPadding = 20;
+        // Reserve padding (generous bottom for X-axis dates)
+        double topPadding = 8;
+        double bottomPadding = 30;
+        double leftPadding = 42;
+        double rightPadding = 18;
 
         double drawWidth = width - leftPadding - rightPadding;
         double drawHeight = height - topPadding - bottomPadding;
@@ -100,43 +113,47 @@ public sealed partial class LineChart : UserControl
         // Avoid division by zero
         if (Math.Abs(maxY - minY) < 0.01)
         {
-            minY -= 100;
-            maxY += 100;
+            minY -= 1.0;
+            maxY += 1.0;
         }
 
-        // Add 10% breathing room to top and bottom
         double diffY = maxY - minY;
-        minY -= diffY * 0.1;
-        maxY += diffY * 0.1;
-        diffY = maxY - minY;
 
-        // Draw horizontal grid lines (3 steps)
-        int gridSteps = 3;
-        for (int i = 0; i <= gridSteps; i++)
+        // Draw Y-Axis Grid Lines and Labels
+        int gridLineCount = 3;
+        for (int i = 0; i <= gridLineCount; i++)
         {
-            double ratio = (double)i / gridSteps;
-            double yVal = minY + (ratio * diffY);
-            double yPos = topPadding + drawHeight - (ratio * drawHeight);
+            double yRatio = (double)i / gridLineCount;
+            double yPos = topPadding + drawHeight - (yRatio * drawHeight);
+            double yVal = minY + (yRatio * diffY);
 
-            // Grid Line
+            // Grid line
             var line = new Line
             {
                 X1 = leftPadding,
                 Y1 = yPos,
-                X2 = width - rightPadding,
+                X2 = leftPadding + drawWidth,
                 Y2 = yPos,
                 Stroke = new SolidColorBrush(ColorHelper.FromArgb(25, 255, 255, 255)),
                 StrokeThickness = 1
             };
             GridLinesCanvas.Children.Add(line);
 
-            // Y-Axis Label
+            // Smart Y-Axis Label
+            string formattedY;
+            if (yVal >= 1_000_000)
+                formattedY = $"R$ {yVal / 1_000_000:N1}M";
+            else if (yVal >= 10_000)
+                formattedY = $"R$ {yVal / 1_000:N0}k";
+            else
+                formattedY = $"R$ {yVal:N0}";
+
             var textBlock = new TextBlock
             {
-                Text = $"R$ {yVal:N0}",
+                Text = formattedY,
                 FontSize = 9,
                 Foreground = new SolidColorBrush(ColorHelper.FromArgb(150, 255, 255, 255)),
-                Width = leftPadding - 5,
+                Width = leftPadding - 6,
                 TextAlignment = TextAlignment.Right
             };
             Canvas.SetLeft(textBlock, 0);
@@ -144,7 +161,19 @@ public sealed partial class LineChart : UserControl
             GridLinesCanvas.Children.Add(textBlock);
         }
 
-        // Calculate coordinates
+        // Draw X-axis bottom baseline
+        var xAxisLine = new Line
+        {
+            X1 = leftPadding,
+            Y1 = topPadding + drawHeight,
+            X2 = leftPadding + drawWidth,
+            Y2 = topPadding + drawHeight,
+            Stroke = new SolidColorBrush(ColorHelper.FromArgb(25, 255, 255, 255)),
+            StrokeThickness = 1
+        };
+        GridLinesCanvas.Children.Add(xAxisLine);
+
+        // Calculate coordinates and draw X-axis date labels
         for (int i = 0; i < _points.Count; i++)
         {
             double xRatio = _points.Count > 1 ? (double)i / (_points.Count - 1) : 0.5;
@@ -154,6 +183,22 @@ public sealed partial class LineChart : UserControl
             double yPos = topPadding + drawHeight - (yRatio * drawHeight);
 
             _renderedCoordinates.Add(new Point(xPos, yPos));
+
+            // Render X-axis date label for selected sample points
+            if (_points.Count <= 5 || i % (_points.Count / 4 + 1) == 0 || i == _points.Count - 1)
+            {
+                var xLabel = new TextBlock
+                {
+                    Text = _points[i].Label,
+                    FontSize = 10,
+                    Foreground = new SolidColorBrush(ColorHelper.FromArgb(180, 255, 255, 255)),
+                    Width = 40,
+                    TextAlignment = TextAlignment.Center
+                };
+                Canvas.SetLeft(xLabel, xPos - 20);
+                Canvas.SetTop(xLabel, topPadding + drawHeight + 6);
+                GridLinesCanvas.Children.Add(xLabel);
+            }
         }
 
         // Create Path Geometry for Line
@@ -177,7 +222,17 @@ public sealed partial class LineChart : UserControl
         areaFigure.Segments.Add(new LineSegment { Point = new Point(_renderedCoordinates.Last().X, topPadding + drawHeight) });
 
         LinePath.Data = lineGeometry;
+        LinePath.Stroke = new SolidColorBrush(LineColor);
+
         AreaPath.Data = areaGeometry;
+        var gradient = new LinearGradientBrush
+        {
+            StartPoint = new Point(0, 0),
+            EndPoint = new Point(0, 1)
+        };
+        gradient.GradientStops.Add(new GradientStop { Color = Windows.UI.Color.FromArgb(50, LineColor.R, LineColor.G, LineColor.B), Offset = 0.0 });
+        gradient.GradientStops.Add(new GradientStop { Color = Windows.UI.Color.FromArgb(0, LineColor.R, LineColor.G, LineColor.B), Offset = 1.0 });
+        AreaPath.Fill = gradient;
 
         // Draw small circles at data points
         foreach (var coord in _renderedCoordinates)
@@ -186,8 +241,8 @@ public sealed partial class LineChart : UserControl
             {
                 Width = 6,
                 Height = 6,
-                Fill = new SolidColorBrush(Colors.Cyan),
-                Stroke = new SolidColorBrush(Colors.Black),
+                Fill = new SolidColorBrush(LineColor),
+                Stroke = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 10, 10, 15)),
                 StrokeThickness = 1
             };
             Canvas.SetLeft(dot, coord.X - 3);

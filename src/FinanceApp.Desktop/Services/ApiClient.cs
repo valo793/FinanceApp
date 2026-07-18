@@ -350,6 +350,20 @@ public sealed class ApiClient
         return await response.Content.ReadFromJsonAsync<IReadOnlyCollection<CandlestickPointDto>>(cancellationToken: cancellationToken) ?? [];
     }
 
+    public async Task<IReadOnlyCollection<CandlestickPointDto>> GetBenchmarkCandlesticksAsync(string ticker, DateOnly? from = null, DateOnly? to = null, CancellationToken cancellationToken = default)
+    {
+        var url = $"api/v1/investments/benchmark/{Uri.EscapeDataString(ticker)}";
+        var queryParams = new List<string>();
+        if (from.HasValue) queryParams.Add($"from={from.Value:yyyy-MM-dd}");
+        if (to.HasValue) queryParams.Add($"to={to.Value:yyyy-MM-dd}");
+        if (queryParams.Count > 0) url += "?" + string.Join("&", queryParams);
+
+        var response = await SendWithRefreshAsync(() =>
+            new HttpRequestMessage(HttpMethod.Get, url), cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<IReadOnlyCollection<CandlestickPointDto>>(cancellationToken: cancellationToken) ?? [];
+    }
+
     public async Task<InvestmentDto?> CreateInvestmentAsync(CreateInvestmentRequest request, CancellationToken cancellationToken = default)
     {
         var response = await SendWithRefreshAsync(() =>
@@ -379,6 +393,14 @@ public sealed class ApiClient
         var response = await SendWithRefreshAsync(() =>
             new HttpRequestMessage(HttpMethod.Delete, $"api/v1/investments/{id}"), cancellationToken);
         response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<InvestmentDto?> TogglePinInvestmentAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await SendWithRefreshAsync(() =>
+            new HttpRequestMessage(HttpMethod.Put, $"api/v1/investments/{id}/pin"), cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<InvestmentDto>(cancellationToken: cancellationToken);
     }
 
     public async Task<TickerValidationResultDto?> ValidateTickerAsync(string ticker, CancellationToken cancellationToken = default)

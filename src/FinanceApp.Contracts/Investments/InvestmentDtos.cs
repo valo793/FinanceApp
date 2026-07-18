@@ -19,6 +19,9 @@ public sealed class InvestmentDto
     public decimal? IndexerRate { get; init; }
     public decimal? IndexerAdditionalRate { get; init; }
     public bool IsWatchlist { get; init; }
+    public Guid? AccountId { get; init; }
+    public DateOnly? PurchaseDate { get; init; }
+    public bool IsPinned { get; init; }
     public decimal TotalInvested { get; init; }
     public decimal CurrentValue { get; init; }
     public decimal GainLossPercent { get; init; }
@@ -42,6 +45,9 @@ public sealed class CreateInvestmentRequest
     public decimal? IndexerRate { get; init; }
     public decimal? IndexerAdditionalRate { get; init; }
     public bool IsWatchlist { get; init; }
+    public Guid? AccountId { get; init; }
+    public DateOnly? PurchaseDate { get; init; }
+    public bool IsPinned { get; init; } = false;
 }
 
 public sealed class UpdateInvestmentRequest
@@ -58,6 +64,9 @@ public sealed class UpdateInvestmentRequest
     public decimal? IndexerRate { get; init; }
     public decimal? IndexerAdditionalRate { get; init; }
     public bool IsWatchlist { get; init; }
+    public Guid? AccountId { get; init; }
+    public DateOnly? PurchaseDate { get; init; }
+    public bool IsPinned { get; init; }
     public required long LockVersion { get; init; }
 }
 

@@ -17,4 +17,5 @@ public interface IInvestmentService
     Task SyncPricesAsync(Guid userId, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<InvestmentHistoryPointDto>> GetHistoryAsync(Guid userId, string? category, Guid? investmentId, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<CandlestickPointDto>> GetInvestmentCandlesticksAsync(Guid userId, Guid id, DateOnly from, DateOnly to, CancellationToken cancellationToken);
+    Task<InvestmentDto> TogglePinAsync(Guid userId, Guid id, CancellationToken cancellationToken);
 }

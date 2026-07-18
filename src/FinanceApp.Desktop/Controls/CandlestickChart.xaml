@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     SizeChanged="UserControl_SizeChanged">
 
-    <Grid x:Name="ChartGrid" Height="220" Margin="0,10,0,10">
+    <Grid x:Name="ChartGrid" Margin="0,10,0,10">
         <Canvas x:Name="ChartCanvas" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <Canvas x:Name="GridLinesCanvas" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
             <Canvas x:Name="CandlesCanvas" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />

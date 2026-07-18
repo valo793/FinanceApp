@@ -189,9 +189,9 @@ public sealed partial class WaterfallChart : UserControl
         GridLinesCanvas.Children.Add(xAxis);
 
         // Brushes
-        var neutralBrush = new SolidColorBrush(Color.FromArgb(255, 124, 92, 255)); // Violet
-        var greenBrush = new SolidColorBrush(Color.FromArgb(255, 34, 197, 94));    // Success/Green
-        var redBrush = new SolidColorBrush(Color.FromArgb(255, 239, 68, 68));      // Error/Red
+        var neutralBrush = new SolidColorBrush(Color.FromArgb(255, 37, 99, 235)); // Blue
+        var greenBrush = new SolidColorBrush(Color.FromArgb(255, 5, 150, 105));    // Success/Emerald
+        var redBrush = new SolidColorBrush(Color.FromArgb(255, 225, 29, 72));      // Error/Rose
 
         double colSpacing = drawWidth / barValues.Count;
         double colWidth = colSpacing * 0.7;
@@ -211,14 +211,16 @@ public sealed partial class WaterfallChart : UserControl
             double bottomY = Math.Max(yStart, yEnd);
             double barHeight = Math.Max(2.0, bottomY - topY);
 
-            SolidColorBrush fillBrush = item.Point.Type switch
+            bool isPositive = item.Point.Type switch
             {
-                "start" => neutralBrush,
-                "end" => neutralBrush,
-                "increase" => greenBrush,
-                "decrease" => redBrush,
-                _ => neutralBrush
+                "start" => item.Point.Value >= 0,
+                "end" => item.Point.Value >= 0,
+                "increase" => true,
+                "decrease" => false,
+                _ => item.Point.Value >= 0
             };
+
+            SolidColorBrush fillBrush = isPositive ? greenBrush : redBrush;
 
             // Rectangle body
             var rect = new Rectangle
@@ -296,7 +298,7 @@ public sealed partial class WaterfallChart : UserControl
             {
                 var sign = p.Type == "increase" ? "+" : "-";
                 TooltipValue.Text = $"{sign} R$ {p.Value:N2}";
-                TooltipValue.Foreground = new SolidColorBrush(p.Type == "increase" ? Color.FromArgb(255, 34, 197, 94) : Color.FromArgb(255, 239, 68, 68));
+                TooltipValue.Foreground = new SolidColorBrush(p.Type == "increase" ? Color.FromArgb(255, 5, 150, 105) : Color.FromArgb(255, 225, 29, 72));
             }
 
             TooltipBorder.Visibility = Visibility.Visible;

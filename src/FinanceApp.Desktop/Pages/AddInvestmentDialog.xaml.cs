@@ -27,10 +27,40 @@ public sealed partial class AddInvestmentDialog : ContentDialog
     public decimal? IndexerRate => IndexerPanel.Visibility == Visibility.Visible ? (decimal?)IndexerRateInput.Value : null;
     public decimal? IndexerAdditionalRate => (IndexerPanel.Visibility == Visibility.Visible && IndexerAdditionalRateInput.Visibility == Visibility.Visible) ? (decimal?)IndexerAdditionalRateInput.Value : null;
 
+    private Guid? _existingAccountId;
+    private DateOnly? _existingPurchaseDate;
+
+    public Guid? AccountId => AccountInput.SelectedValue as Guid?;
+    public DateOnly? PurchaseDate => PurchaseDateInput.Date.HasValue ? DateOnly.FromDateTime(PurchaseDateInput.Date.Value.DateTime) : (DateOnly?)null;
+
     public AddInvestmentDialog()
     {
         InitializeComponent();
         _apiClient = App.Host.Services.GetRequiredService<ApiClient>();
+        Loaded += AddInvestmentDialog_Loaded;
+    }
+
+    private async void AddInvestmentDialog_Loaded(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var accounts = await _apiClient.GetAccountsAsync();
+            AccountInput.ItemsSource = accounts;
+            if (_existingAccountId.HasValue)
+            {
+                AccountInput.SelectedValue = _existingAccountId.Value;
+            }
+            else if (accounts.Count > 0)
+            {
+                AccountInput.SelectedIndex = 0;
+            }
+        }
+        catch { }
+
+        if (_existingPurchaseDate.HasValue)
+        {
+            PurchaseDateInput.Date = new DateTimeOffset(_existingPurchaseDate.Value.ToDateTime(TimeOnly.MinValue));
+        }
     }
 
     public AddInvestmentDialog(InvestmentDto existing) : this()
@@ -42,6 +72,9 @@ public sealed partial class AddInvestmentDialog : ContentDialog
         AveragePriceInput.Value = (double)existing.AveragePrice;
         CurrentPriceInput.Value = (double)existing.CurrentPrice;
         IsWatchlistInput.IsChecked = existing.IsWatchlist;
+
+        _existingAccountId = existing.AccountId;
+        _existingPurchaseDate = existing.PurchaseDate;
 
         SetComboBoxSelectedTag(AssetTypeInput, existing.AssetType);
         SetComboBoxSelectedTag(RiskLevelInput, existing.RiskLevel);

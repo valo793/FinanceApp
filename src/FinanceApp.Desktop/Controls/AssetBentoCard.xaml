@@ -4,75 +4,82 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:inv="using:FinanceApp.Contracts.Investments"
     xmlns:controls="using:FinanceApp.Desktop.Controls"
-    Width="340"
-    Height="290"
-    Margin="8"
-    Loaded="UserControl_Loaded">
+    HorizontalAlignment="Stretch"
+    Loaded="UserControl_Loaded"
+    Unloaded="UserControl_Unloaded">
 
-    <UserControl.Resources>
-        <Style x:Key="MiniTabButtonStyle" TargetType="RadioButton">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="10,4"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Height" Value="24"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="RadioButton">
-                        <Border x:Name="RootBorder" 
-                                Background="{TemplateBinding Background}" 
-                                CornerRadius="12" 
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter x:Name="ContentPresenter"
-                                              Content="{TemplateBinding Content}"
-                                              HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-    </UserControl.Resources>
-
-    <Border CornerRadius="16" 
+    <Border x:Name="CardBorder"
+            CornerRadius="8" 
             Background="{StaticResource BgSurfaceBrush}" 
             BorderThickness="1" 
-            BorderBrush="{StaticResource BorderSubtleBrush}"
-            Padding="16"
+            BorderBrush="{StaticResource BorderMutedBrush}"
+            Padding="14"
             HorizontalAlignment="Stretch"
-            VerticalAlignment="Stretch">
-        
-        <Grid RowSpacing="12">
+            VerticalAlignment="Stretch"
+            PointerPressed="Card_PointerPressed"
+            PointerEntered="Card_PointerEntered"
+            PointerExited="Card_PointerExited">
+
+        <Grid RowSpacing="10" HorizontalAlignment="Stretch">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" /> <!-- Header -->
-                <RowDefinition Height="Auto" /> <!-- Stats -->
-                <RowDefinition Height="Auto" /> <!-- Chart Selection -->
-                <RowDefinition Height="*" />    <!-- Chart Content -->
+                <RowDefinition Height="180" />  <!-- Chart Content: Fixed generous vertical height -->
             </Grid.RowDefinitions>
 
-            <!-- Row 0: Header (Name & Ticker) -->
-            <Grid Grid.Row="0">
+            <!-- Row 0: Header (Name, Details, Position Value & Actions) -->
+            <Grid Grid.Row="0" HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />     <!-- Left: Name & Details -->
+                    <ColumnDefinition Width="Auto" />  <!-- Right: Position Value & Gain/Loss -->
+                    <ColumnDefinition Width="Auto" />  <!-- Far Right: Actions Button -->
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Column="0" Spacing="2">
+                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center" Margin="0,0,8,0">
                     <TextBlock x:Name="NameText" 
-                               FontWeight="SemiBold" 
-                               FontSize="14" 
-                               Foreground="{StaticResource TextPrimaryBrush}" 
-                               TextTrimming="CharacterEllipsis" />
-                    <TextBlock x:Name="TickerText" 
-                               FontSize="11" 
                                FontWeight="Bold" 
-                               Foreground="{StaticResource AccentCyanBrush}" />
+                               FontSize="13" 
+                               Foreground="{StaticResource TextPrimaryBrush}" 
+                               TextTrimming="CharacterEllipsis"
+                               MaxLines="1" />
+
+                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Left" VerticalAlignment="Center">
+                        <TextBlock x:Name="TickerText" 
+                                   FontSize="10" 
+                                   FontWeight="Bold" 
+                                   Foreground="{StaticResource AccentCyanBrush}" />
+
+                        <TextBlock x:Name="QuantityText" 
+                                   FontSize="10" 
+                                   FontFamily="Consolas, Courier New, monospace"
+                                   Foreground="{StaticResource TextSecondaryBrush}" />
+
+                        <TextBlock x:Name="PriceDetailsText" 
+                                   FontSize="10" 
+                                   FontFamily="Consolas, Courier New, monospace"
+                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                    </StackPanel>
                 </StackPanel>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Top">
-                    <!-- Premium Action Flyout Button -->
+                <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center" Margin="8,0,4,0" HorizontalAlignment="Right">
+                    <TextBlock x:Name="PositionValueText" 
+                               FontWeight="Bold" 
+                               FontSize="13" 
+                               FontFamily="Consolas, Courier New, monospace"
+                               Foreground="{StaticResource TextPrimaryBrush}" 
+                               HorizontalAlignment="Right" />
+
+                    <TextBlock x:Name="GainLossText" 
+                               FontSize="10" 
+                               FontWeight="SemiBold" 
+                               FontFamily="Consolas, Courier New, monospace"
+                               HorizontalAlignment="Right" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                    <Button x:Name="PinButton" Background="Transparent" BorderThickness="0" Padding="4" Click="PinButton_Click" ToolTipService.ToolTip="Fixar/Destacar gráfico">
+                        <FontIcon x:Name="PinIcon" Glyph="&#xE718;" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" />
+                    </Button>
+
                     <Button x:Name="ActionsButton" Background="Transparent" BorderThickness="0" Padding="4" ToolTipService.ToolTip="Opções do Ativo">
                         <SymbolIcon Symbol="More" Foreground="{StaticResource TextSecondaryBrush}" />
                         <Button.Flyout>
@@ -99,81 +106,20 @@
                 </StackPanel>
             </Grid>
 
-            <!-- Row 1: Position Stats -->
-            <Grid Grid.Row="1" ColumnSpacing="8" RowSpacing="4">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="Posição" FontSize="9" Foreground="{StaticResource TextSecondaryBrush}" />
-                    <TextBlock x:Name="QuantityText" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" />
-                </StackPanel>
-
-                <StackPanel Grid.Column="1">
-                    <TextBlock Text="Preço Médio" FontSize="9" Foreground="{StaticResource TextSecondaryBrush}" />
-                    <TextBlock x:Name="AveragePriceText" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" />
-                </StackPanel>
-
-                <StackPanel Grid.Column="2" HorizontalAlignment="Right">
-                    <TextBlock Text="Cotação Atual" FontSize="9" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Right" />
-                    <TextBlock x:Name="CurrentPriceText" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Right" />
-                </StackPanel>
-            </Grid>
-
-            <!-- Row 2: Chart Type Toggle -->
-            <Grid Grid.Row="2">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-
-                <!-- Value / Variation -->
-                <TextBlock x:Name="TotalValueText" 
-                           Grid.Column="0" 
-                           FontSize="15" 
-                           FontWeight="Bold" 
-                           Foreground="{StaticResource TextPrimaryBrush}" 
-                           VerticalAlignment="Center" />
-
-                <!-- Toggle Buttons -->
-                <Border Grid.Column="1" 
-                        Background="{StaticResource BgElevatedBrush}" 
-                        CornerRadius="14" 
-                        Padding="2">
-                    <StackPanel Orientation="Horizontal" Spacing="2">
-                        <RadioButton x:Name="TrendTabButton" 
-                                     Content="Linha" 
-                                     GroupName="ChartType" 
-                                     IsChecked="True" 
-                                     Style="{StaticResource MiniTabButtonStyle}" 
-                                     Checked="ChartType_Checked" />
-                        <RadioButton x:Name="CandleTabButton" 
-                                     Content="Velas" 
-                                     GroupName="ChartType" 
-                                     Style="{StaticResource MiniTabButtonStyle}" 
-                                     Checked="ChartType_Checked" />
-                    </StackPanel>
-                </Border>
-            </Grid>
-
-            <!-- Row 3: Visualizations (Line vs Candlestick) -->
-            <Grid Grid.Row="3">
-                <!-- Sparkline / Trend Line Chart -->
+            <!-- Row 1: Chart (Expanded 200px vertical height) -->
+            <Grid Grid.Row="1" Height="200" HorizontalAlignment="Stretch">
                 <controls:LineChart x:Name="TrendChart" 
-                                    Height="130" 
-                                    VerticalAlignment="Bottom" 
+                                    Height="200"
+                                    VerticalAlignment="Stretch" 
+                                    HorizontalAlignment="Stretch"
                                     Visibility="Visible" />
 
-                <!-- Candlestick Chart -->
                 <controls:CandlestickChart x:Name="CandleChart" 
-                                          Height="130" 
-                                          VerticalAlignment="Bottom" 
-                                          Visibility="Collapsed" />
+                                           Height="200"
+                                           VerticalAlignment="Stretch" 
+                                           HorizontalAlignment="Stretch"
+                                           Visibility="Collapsed" />
 
-                <!-- Loading overlay -->
                 <Grid x:Name="LoadingOverlay" Background="{StaticResource BgSurfaceBrush}" Opacity="0.8" Visibility="Collapsed">
                     <ProgressRing IsActive="True" Width="24" Height="24" Foreground="{StaticResource AccentCyanBrush}" />
                 </Grid>

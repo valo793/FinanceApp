@@ -22,6 +22,9 @@ public sealed class InvestmentConfiguration : IEntityTypeConfiguration<Investmen
         builder.Property(x => x.IndexerRate).HasPrecision(19, 4);
         builder.Property(x => x.IndexerAdditionalRate).HasPrecision(19, 4);
         builder.Property(x => x.IsWatchlist).HasDefaultValue(false);
+        builder.Property(x => x.AccountId);
+        builder.Property(x => x.PurchaseDate);
+        builder.Property(x => x.IsPinned).HasDefaultValue(false);
         builder.Property(x => x.LockVersion).IsConcurrencyToken();
     }
 }

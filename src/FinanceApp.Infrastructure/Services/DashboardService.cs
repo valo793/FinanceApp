@@ -35,26 +35,6 @@ public sealed class DashboardService(FinanceDbContext dbContext) : IDashboardSer
         var projectedBalance = currentBalance + plannedIncome - plannedExpenses;
         var investedNetWorth = investments.Sum(x => x.Quantity * x.CurrentPrice);
 
-        var totalExpenseAmount = transactions.Where(x => x.TransactionType == TransactionTypes.Expense).Sum(x => x.EffectiveAmount);
-        var expenseByCategory = transactions
-            .Where(x => x.TransactionType == TransactionTypes.Expense)
-            .GroupBy(x => x.ExpenseCategoryId)
-            .Select(g =>
-            {
-                var category = g.Key.HasValue && expenseCategories.TryGetValue(g.Key.Value, out var cat) ? cat : null;
-                var categoryName = category?.Name ?? "Sem categoria";
-                var budgetLimit = category?.MonthlyBudgetLimit;
-                var amount = g.Sum(x => x.EffectiveAmount);
-                return new CategoryAmountDto
-                {
-                    Name = categoryName,
-                    Amount = amount,
-                    Percentage = totalExpenseAmount == 0 ? 0 : Math.Round(amount / totalExpenseAmount * 100, 1),
-                    BudgetLimit = budgetLimit
-                };
-            })
-            .OrderByDescending(x => x.Amount)
-            .ToList();
 
         var series = transactions
             .GroupBy(x => x.CompetenceDate)
@@ -133,6 +113,61 @@ public sealed class DashboardService(FinanceDbContext dbContext) : IDashboardSer
         // So Market Variation = Final Net Worth - Initial Net Worth - Income + Expenses - Yields
         var marketVariation = finalNetWorth - initialNetWorth - monthIncome + monthExpenses - monthYields;
 
+        // Calculate net investment return (market variation + yields)
+        var netInvestmentReturn = (double)(marketVariation + monthYields);
+        var displayIncome = monthIncome;
+        var displayExpenses = monthExpenses;
+
+        if (netInvestmentReturn < 0)
+        {
+            displayExpenses += (decimal)Math.Abs(netInvestmentReturn);
+        }
+        else if (netInvestmentReturn > 0)
+        {
+            displayIncome += (decimal)netInvestmentReturn;
+        }
+
+        var displayNetResult = displayIncome - displayExpenses;
+
+        // Calculate expense by category including investment losses/gains
+        var totalExpenseAmount = (double)transactions.Where(x => x.TransactionType == TransactionTypes.Expense).Sum(x => x.EffectiveAmount);
+        if (netInvestmentReturn < 0)
+        {
+            totalExpenseAmount += Math.Abs(netInvestmentReturn);
+        }
+
+        var expenseByCategory = transactions
+            .Where(x => x.TransactionType == TransactionTypes.Expense)
+            .GroupBy(x => x.ExpenseCategoryId)
+            .Select(g =>
+            {
+                var category = g.Key.HasValue && expenseCategories.TryGetValue(g.Key.Value, out var cat) ? cat : null;
+                var categoryName = category?.Name ?? "Sem categoria";
+                var budgetLimit = category?.MonthlyBudgetLimit;
+                var amount = g.Sum(x => x.EffectiveAmount);
+                return new CategoryAmountDto
+                {
+                    Name = categoryName,
+                    Amount = amount,
+                    Percentage = totalExpenseAmount == 0 ? 0 : (decimal)Math.Round((double)amount / totalExpenseAmount * 100, 1),
+                    BudgetLimit = budgetLimit
+                };
+            })
+            .ToList();
+
+        if (netInvestmentReturn != 0)
+        {
+            expenseByCategory.Add(new CategoryAmountDto
+            {
+                Name = netInvestmentReturn < 0 ? "Investimentos (Perda)" : "Investimentos (Ganho)",
+                Amount = (decimal)(-netInvestmentReturn),
+                Percentage = totalExpenseAmount == 0 ? 0 : (decimal)Math.Round((-netInvestmentReturn) / totalExpenseAmount * 100, 1),
+                BudgetLimit = null
+            });
+        }
+
+        expenseByCategory = expenseByCategory.OrderByDescending(x => x.Amount).ToList();
+
         var waterfallPoints = new List<WaterfallPointDto>
         {
             new() { Label = "Inicial", Value = initialNetWorth, Type = "start" },
@@ -154,11 +189,11 @@ public sealed class DashboardService(FinanceDbContext dbContext) : IDashboardSer
 
         return new DashboardOverviewDto
         {
-            CurrentBalance = currentBalance,
-            ProjectedBalance = projectedBalance,
-            MonthIncome = monthIncome,
-            MonthExpenses = monthExpenses,
-            NetResult = monthIncome - monthExpenses,
+            CurrentBalance = currentBalance + investedNetWorth,
+            ProjectedBalance = projectedBalance + investedNetWorth,
+            MonthIncome = displayIncome,
+            MonthExpenses = displayExpenses,
+            NetResult = displayNetResult,
             InvestedNetWorth = investedNetWorth,
             PendingRecurrences = transactions.Count(x => x.Status == TransactionStatuses.Planned),
             CriticalAlerts = 0,
